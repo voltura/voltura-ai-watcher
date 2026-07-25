@@ -551,22 +551,44 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
     private void ClearResolvedMessages()
     {
         var cleared = 0;
-        foreach (var entry in _messages.Where(entry => !CodexChatStatusPolicy.RequiresRetention(entry.Status)))
+        foreach (var threadGroup in _messages
+                     .Cast<CodexMessageEntry>()
+                     .GroupBy(entry => entry.ThreadId))
         {
-            entry.IsCleared = true;
-            var timestamp = entry.OccurredAt.ToUnixTimeMilliseconds();
-            if (!_settings.ClearedThroughUnixMillisecondsByThread.TryGetValue(entry.ThreadId, out var existing) ||
-                timestamp > existing)
+            if (CodexChatStatusPolicy.RequiresRetention(GetCurrentThreadStatus(threadGroup.Key)))
             {
-                _settings.ClearedThroughUnixMillisecondsByThread[entry.ThreadId] = timestamp;
+                continue;
             }
 
-            cleared++;
+            var timestamp = threadGroup.Max(entry => entry.OccurredAt.ToUnixTimeMilliseconds());
+            if (!_settings.ClearedThroughUnixMillisecondsByThread.TryGetValue(threadGroup.Key, out var existing) ||
+                timestamp > existing)
+            {
+                _settings.ClearedThroughUnixMillisecondsByThread[threadGroup.Key] = timestamp;
+            }
+
+            foreach (var entry in threadGroup.Where(entry => !entry.IsCleared))
+            {
+                entry.IsCleared = true;
+                cleared++;
+            }
         }
 
         SaveSettings();
         RefreshView();
         FooterStatus = cleared == 0 ? "No resolved messages to clear." : $"Cleared {cleared} resolved messages.";
+    }
+
+    private CodexChatStatus GetCurrentThreadStatus(string threadId)
+    {
+        if (_threadStatuses.TryGetValue(threadId, out var status))
+        {
+            return status;
+        }
+
+        return _latestByThread.TryGetValue(threadId, out var latest)
+            ? latest.Status
+            : CodexChatStatus.Unknown;
     }
 
     private void Hide_Click(object sender, System.Windows.RoutedEventArgs e) => Hide();
