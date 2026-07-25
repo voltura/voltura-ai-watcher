@@ -11,6 +11,7 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
     public required string Id { get; init; }
     public required string ThreadId { get; init; }
     public required string ProjectName { get; init; }
+    public string? WorkingDirectory { get; init; }
     public required string Sender { get; init; }
     public required string Text { get; init; }
     public required System.DateTimeOffset OccurredAt { get; init; }
@@ -74,6 +75,10 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
             CodexChatStatusPolicy.GetColor(Status))!;
     public bool IsWorking => Status is CodexChatStatus.Starting or CodexChatStatus.Working;
     public string StatusSummary => IsUnread ? $"{StatusLabel} · UNREAD" : StatusLabel;
+    public string? ReferencedFilePath { get; init; }
+    public bool IsReferencedFileAvailable =>
+        !string.IsNullOrWhiteSpace(ReferencedFilePath) &&
+        System.IO.File.Exists(ReferencedFilePath);
 
     public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
 

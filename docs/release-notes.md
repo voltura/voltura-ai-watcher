@@ -1,3 +1,8 @@
+## v0.1.1
+
+- Adds quick Open file, Copy file, and Copy path actions when a Codex message references an available local file.
+- Polishes alignment and styling in the minimized notification and About menu.
+
 ## v0.1.0
 
 - Introduces a compact Windows panel for following human-visible activity across local Codex chats.

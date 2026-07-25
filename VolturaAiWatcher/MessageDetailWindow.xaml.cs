@@ -72,6 +72,15 @@ public partial class MessageDetailWindow : System.Windows.Window
         }
     }
 
+    private void OpenReferencedFile_Click(object sender, System.Windows.RoutedEventArgs e) =>
+        ReferencedFileActions.Open(_entry);
+
+    private void CopyReferencedFile_Click(object sender, System.Windows.RoutedEventArgs e) =>
+        ReferencedFileActions.CopyFile(_entry);
+
+    private void CopyReferencedFilePath_Click(object sender, System.Windows.RoutedEventArgs e) =>
+        ReferencedFileActions.CopyPath(_entry);
+
     private async void OpenCodex_Click(object sender, System.Windows.RoutedEventArgs e)
     {
         await _openMessage(_entry);

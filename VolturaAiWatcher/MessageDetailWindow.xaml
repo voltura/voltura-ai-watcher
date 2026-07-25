@@ -16,6 +16,34 @@
         FontFamily="Bahnschrift SemiCondensed"
         MouseLeftButtonDown="Window_MouseLeftButtonDown">
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <Style TargetType="ToolTip">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="Background" Value="#F20A0F0C" />
+            <Setter Property="Foreground" Value="#7CFF9A" />
+            <Setter Property="BorderBrush" Value="#6B4BFF7A" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="6,3" />
+            <Setter Property="FontFamily" Value="Bahnschrift SemiCondensed" />
+            <Setter Property="FontSize" Value="9" />
+            <Setter Property="HasDropShadow" Value="False" />
+            <Setter Property="Placement" Value="Top" />
+            <Setter Property="VerticalOffset" Value="-6" />
+            <Setter Property="ToolTipService.InitialShowDelay" Value="60" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="DetailButton" TargetType="Button">
             <Setter Property="Foreground" Value="#7CFF9A" />
             <Setter Property="Background" Value="#FF0B1710" />
@@ -25,6 +53,8 @@
             <Setter Property="Margin" Value="6,0,0,0" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="ToolTipService.InitialShowDelay" Value="60" />
+            <Setter Property="ToolTipService.BetweenShowDelay" Value="500" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -48,6 +78,23 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+        <Style x:Key="DetailFileButton"
+               TargetType="Button"
+               BasedOn="{StaticResource DetailButton}">
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="31" />
+            <Setter Property="Padding" Value="8" />
+        </Style>
+        <Style x:Key="DetailFileIcon" TargetType="Path">
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="Stretch" Value="Uniform" />
+            <Setter Property="Stroke" Value="#7CFF9A" />
+            <Setter Property="StrokeThickness" Value="1.25" />
+            <Setter Property="StrokeStartLineCap" Value="Square" />
+            <Setter Property="StrokeEndLineCap" Value="Square" />
+            <Setter Property="Fill" Value="Transparent" />
         </Style>
         <Style x:Key="DetailThumb" TargetType="Thumb">
             <Setter Property="MinHeight" Value="34" />
@@ -170,6 +217,30 @@
                             Click="Next_Click" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Style="{StaticResource DetailFileButton}"
+                            IsEnabled="{Binding IsReferencedFileAvailable}"
+                            Visibility="{Binding IsReferencedFileAvailable, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            ToolTip="Open file"
+                            Click="OpenReferencedFile_Click">
+                        <Path Data="M4,3 H9 L11,5 H14 V14 H4 Z M7,9 H12 M10,6 L13,9 L10,12"
+                              Style="{StaticResource DetailFileIcon}" />
+                    </Button>
+                    <Button Style="{StaticResource DetailFileButton}"
+                            IsEnabled="{Binding IsReferencedFileAvailable}"
+                            Visibility="{Binding IsReferencedFileAvailable, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            ToolTip="Copy file"
+                            Click="CopyReferencedFile_Click">
+                        <Path Data="M6,3 H15 V12 H6 Z M3,6 H5 V14 H12 V13"
+                              Style="{StaticResource DetailFileIcon}" />
+                    </Button>
+                    <Button Style="{StaticResource DetailFileButton}"
+                            IsEnabled="{Binding IsReferencedFileAvailable}"
+                            Visibility="{Binding IsReferencedFileAvailable, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            ToolTip="Copy as Path"
+                            Click="CopyReferencedFilePath_Click">
+                        <Path Data="M4,3 H12 V5 H14 V15 H6 V13 H4 Z M7,7 H11 M7,10 H11 M2,6 H5 V12 H2 Z"
+                              Style="{StaticResource DetailFileIcon}" />
+                    </Button>
                     <Button Style="{StaticResource DetailButton}"
                             Content="COPY MESSAGE"
                             Click="Copy_Click" />

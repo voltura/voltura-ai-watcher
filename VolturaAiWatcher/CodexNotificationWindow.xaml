@@ -14,6 +14,80 @@
         WindowStartupLocation="Manual"
         FontFamily="Bahnschrift SemiCondensed"
         Closing="Window_Closing">
+    <Window.Resources>
+        <Style TargetType="ToolTip">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="Background" Value="#F20A0F0C" />
+            <Setter Property="Foreground" Value="#7CFF9A" />
+            <Setter Property="BorderBrush" Value="#6B4BFF7A" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="6,3" />
+            <Setter Property="FontSize" Value="9" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="HeaderActionButton" TargetType="Button">
+            <Setter Property="ToolTipService.InitialShowDelay" Value="60" />
+            <Setter Property="ToolTipService.ShowOnDisabled" Value="True" />
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Background" Value="#B008110B" />
+            <Setter Property="BorderBrush" Value="#485EBB70" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Shell"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5"
+                                Opacity="{TemplateBinding Opacity}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Shell" Property="Background" Value="#E0142017" />
+                                <Setter TargetName="Shell" Property="BorderBrush" Value="#B07CFF9A" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Shell" Property="Opacity" Value="0.6" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.24" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="HeaderActionIcon" TargetType="Path">
+            <Setter Property="Stroke" Value="#7CFF9A" />
+            <Setter Property="StrokeThickness" Value="1.45" />
+            <Setter Property="Fill" Value="Transparent" />
+            <Setter Property="StrokeStartLineCap" Value="Round" />
+            <Setter Property="StrokeEndLineCap" Value="Round" />
+            <Setter Property="StrokeLineJoin" Value="Round" />
+            <Setter Property="Stretch" Value="Uniform" />
+            <Setter Property="Width" Value="13" />
+            <Setter Property="Height" Value="13" />
+        </Style>
+    </Window.Resources>
     <Border x:Name="PanelShell"
             Background="#FA070C09"
             BorderBrush="#B05CD77A"
@@ -26,28 +100,42 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <Grid>
-                <StackPanel Orientation="Horizontal">
-                    <Ellipse Width="7" Height="7" Fill="{Binding StatusBrush}" Margin="0,1,7,0" />
+                <StackPanel Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <Ellipse Width="7"
+                             Height="7"
+                             Fill="{Binding StatusBrush}"
+                             Margin="0,0,7,0"
+                             VerticalAlignment="Center" />
                     <TextBlock Text="{Binding StatusSummary}"
                                Foreground="{Binding StatusBrush}"
                                FontSize="8"
-                               FontWeight="Bold" />
+                               FontWeight="Bold"
+                               VerticalAlignment="Center" />
                 </StackPanel>
-                <Button HorizontalAlignment="Right"
-                        Width="22"
-                        Height="20"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Foreground="#8AAF92"
-                        Cursor="Hand"
-                        Click="Dismiss_Click">
-                    <Path Data="M3,3 L13,13 M13,3 L3,13"
-                          Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                          StrokeThickness="1.4"
-                          Stretch="Uniform"
-                          Width="11"
-                          Height="11" />
-                </Button>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Style="{StaticResource HeaderActionButton}"
+                            IsEnabled="{Binding IsReferencedFileAvailable}"
+                            Click="OpenReferencedFile_Click"
+                            ToolTip="Open referenced file">
+                        <Path Data="M4,3 H9 L11,5 H14 V14 H4 Z M7,9 H12 M10,6 L13,9 L10,12"
+                              Style="{StaticResource HeaderActionIcon}" />
+                    </Button>
+                    <Button Style="{StaticResource HeaderActionButton}"
+                            IsEnabled="{Binding IsReferencedFileAvailable}"
+                            Click="CopyReferencedFilePath_Click"
+                            ToolTip="Copy referenced file path">
+                        <Path Data="M4,3 H12 V5 H14 V15 H6 V13 H4 Z M7,7 H11 M7,10 H11 M2,6 H5 V12 H2 Z"
+                              Style="{StaticResource HeaderActionIcon}" />
+                    </Button>
+                    <Button Style="{StaticResource HeaderActionButton}"
+                            Click="Dismiss_Click"
+                            ToolTip="Dismiss">
+                        <Path Data="M3,3 L13,13 M13,3 L3,13"
+                              Stroke="#8AAF92"
+                              Style="{StaticResource HeaderActionIcon}" />
+                    </Button>
+                </StackPanel>
             </Grid>
             <Border Grid.Row="1"
                     Margin="0,9,0,0"

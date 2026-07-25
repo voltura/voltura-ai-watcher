@@ -17,6 +17,8 @@
 - Preserve per-thread ordering and deduplication when parsing incremental JSONL updates.
 - Human-visible assistant messages, approval requests, user-input requests, work updates, and completion states must remain distinguishable.
 - Optional sound is for actionable transitions only: input, approval, or connector waits. Do not play it for ordinary assistant messages, work updates, completion, interruption, or failure.
+- Resolve local file references from message links and inline code against the session working directory. File actions must revalidate `File.Exists` and stay disabled when no available referenced file exists.
+- Message-row file actions use the icon-only horizontal context menu shared with Voltura Download Watcher. The minimized notification header exposes the same Open file and Copy path actions before Dismiss.
 - Cleared-through state is local app state only and must not alter Codex data.
 - Normal close is close-to-tray. Explicit tray Exit is the supported shutdown path.
 - The app is single-instance per Windows session. A duplicate process must signal the existing instance and exit.

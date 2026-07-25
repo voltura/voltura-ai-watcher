@@ -205,11 +205,15 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
                 Id = message.Id,
                 ThreadId = message.ThreadId,
                 ProjectName = message.ProjectName,
+                WorkingDirectory = message.WorkingDirectory,
                 ChatTitle = message.ChatTitle,
                 Sender = message.Sender,
                 Text = message.Text,
                 OccurredAt = message.OccurredAt,
                 Status = status,
+                ReferencedFilePath = ReferencedFileResolver.ResolveFirstExistingFile(
+                    message.Text,
+                    message.WorkingDirectory),
                 IsUnread = _unreadThreads.Contains(message.ThreadId) || (!historical && message.Sender == "Codex"),
                 IsLatestForThread = true
             };
@@ -444,6 +448,33 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         };
         MessagesList.SelectedItem = null;
         detail.ShowDialog();
+    }
+
+    private static CodexMessageEntry? GetContextMenuEntry(object sender) =>
+        sender is System.Windows.Controls.MenuItem { Tag: CodexMessageEntry entry }
+            ? entry
+            : null;
+
+    private void OpenReferencedFile_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (GetContextMenuEntry(sender) is { } entry)
+        {
+            FooterStatus = ReferencedFileActions.Open(entry)
+                ? $"Opened {System.IO.Path.GetFileName(entry.ReferencedFilePath)}."
+                : "The referenced file is unavailable.";
+        }
+    }
+
+    private void CopyReferencedFilePath_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (GetContextMenuEntry(sender) is { } entry)
+        {
+            FooterStatus = ReferencedFileActions.CopyPath(entry)
+                ? "Referenced file path copied."
+                : "The referenced file path could not be copied.";
+        }
     }
 
     private async void OpenCodex_Click(object sender, System.Windows.RoutedEventArgs e)
@@ -741,7 +772,9 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         var about = CreateMenuItem("About");
         ApplyDropDownTheme(about.DropDown);
         var version = CreateMenuItem($"Voltura AI Watcher v{GetProductVersion()}");
-        version.Enabled = false;
+        version.Font = new System.Drawing.Font(version.Font, System.Drawing.FontStyle.Bold);
+        version.ForeColor = System.Drawing.Color.FromArgb(124, 255, 154);
+        version.Padding = new System.Windows.Forms.Padding(8, 5, 10, 5);
         var projectPage = CreateMenuItem("Project page");
         projectPage.Click += (_, _) => OpenWebPage("https://github.com/voltura/voltura-ai-watcher");
         var latestRelease = CreateMenuItem("Latest release");

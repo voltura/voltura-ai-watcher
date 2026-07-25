@@ -128,6 +128,22 @@ public partial class CodexNotificationWindow : System.Windows.Window, System.IDi
 
     private void Dismiss_Click(object sender, System.Windows.RoutedEventArgs e) => Dismiss();
 
+    private void OpenReferencedFile_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (DataContext is CodexMessageEntry entry && ReferencedFileActions.Open(entry))
+        {
+            Dismiss();
+        }
+    }
+
+    private void CopyReferencedFilePath_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (DataContext is CodexMessageEntry entry && ReferencedFileActions.CopyPath(entry))
+        {
+            Dismiss();
+        }
+    }
+
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         if (_allowClose)
