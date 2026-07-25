@@ -1,6 +1,9 @@
-## v0.1.1
+## v0.1.2
 
 - Clears all visible rows for chats that have reached a resolved state, including earlier work updates from the same chat.
+
+## v0.1.1
+
 - Adds quick Open file, Copy file, and Copy path actions when a Codex message references an available local file.
 - Polishes alignment and styling in the minimized notification and About menu.
 
