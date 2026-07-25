@@ -1,0 +1,543 @@
+<Window x:Class="VolturaAiWatcher.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="Voltura AI Watcher"
+        Width="392"
+        Height="650"
+        MinWidth="330"
+        MinHeight="360"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="CanResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        WindowStartupLocation="Manual"
+        FontFamily="Bahnschrift SemiCondensed"
+        Closing="Window_Closing"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0"
+                            ResizeBorderThickness="7"
+                            CornerRadius="0"
+                            GlassFrameThickness="0"
+                            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="NeonGreen" Color="#7CFF9A" />
+        <SolidColorBrush x:Key="MutedGreen" Color="#6EA37A" />
+
+        <Style TargetType="ToolTip">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="Background" Value="#FA070C09" />
+            <Setter Property="Foreground" Value="#7CFF9A" />
+            <Setter Property="BorderBrush" Value="#705CD77A" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="7,4" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="IconButton" TargetType="Button">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Margin" Value="3,0,0,0" />
+            <Setter Property="Padding" Value="5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Foreground" Value="#7CFF9A" />
+            <Setter Property="Background" Value="#A009110C" />
+            <Setter Property="BorderBrush" Value="#485EBB70" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Shell"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Shell" Property="Background" Value="#E0142017" />
+                                <Setter TargetName="Shell" Property="BorderBrush" Value="#B07CFF9A" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Shell" Property="Opacity" Value="0.55" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="IconPath" TargetType="Path">
+            <Setter Property="Stroke" Value="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+            <Setter Property="Fill" Value="Transparent" />
+            <Setter Property="StrokeStartLineCap" Value="Round" />
+            <Setter Property="StrokeEndLineCap" Value="Round" />
+            <Setter Property="StrokeLineJoin" Value="Round" />
+            <Setter Property="Stretch" Value="Uniform" />
+            <Setter Property="Width" Value="14" />
+            <Setter Property="Height" Value="14" />
+        </Style>
+
+        <Style x:Key="CyberScrollThumb" TargetType="Thumb">
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border x:Name="ThumbShell"
+                                Margin="2"
+                                Background="#805CD77A"
+                                BorderBrush="#B07CFF9A"
+                                BorderThickness="1"
+                                CornerRadius="4" />
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ThumbShell" Property="Background" Value="#C067EE86" />
+                                <Setter TargetName="ThumbShell" Property="BorderBrush" Value="#FF9BFFB0" />
+                            </Trigger>
+                            <Trigger Property="IsDragging" Value="True">
+                                <Setter TargetName="ThumbShell" Property="Background" Value="#FF7CFF9A" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="11" />
+            <Setter Property="Background" Value="#FF07100B" />
+            <Setter Property="Foreground" Value="#7CFF9A" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="#3154B96B"
+                                BorderThickness="1,0,0,0">
+                            <Track x:Name="PART_Track"
+                                   IsDirectionReversed="True"
+                                   Focusable="False">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageUpCommand"
+                                                  Background="Transparent"
+                                                  BorderThickness="0"
+                                                  Focusable="False"
+                                                  Opacity="0" />
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource CyberScrollThumb}" />
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageDownCommand"
+                                                  Background="Transparent"
+                                                  BorderThickness="0"
+                                                  Focusable="False"
+                                                  Opacity="0" />
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CyberListView" TargetType="ListView">
+            <Setter Property="Background" Value="#FF07100B" />
+            <Setter Property="BorderBrush" Value="#705CD77A" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListView">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7"
+                                Padding="{TemplateBinding Padding}">
+                            <ScrollViewer x:Name="PART_ScrollViewer"
+                                          Focusable="False"
+                                          CanContentScroll="True"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto">
+                                <ItemsPresenter />
+                            </ScrollViewer>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,0,5" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <ContentPresenter />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border x:Name="OuterShell"
+            Background="#FF070C09"
+            BorderBrush="#A85CD77A"
+            BorderThickness="1"
+            CornerRadius="12"
+            Padding="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border Background="#E909120C"
+                    BorderBrush="#4054B96B"
+                    BorderThickness="0,0,0,1"
+                    CornerRadius="11,11,0,0"
+                    Padding="13,11">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="7" Height="7" Fill="#55FF82" Margin="0,0,7,0">
+                                <Ellipse.Effect>
+                                    <DropShadowEffect Color="#55FF82" BlurRadius="8" ShadowDepth="0" Opacity="0.8" />
+                                </Ellipse.Effect>
+                            </Ellipse>
+                            <TextBlock Text="VOLTURA // AI WATCHER"
+                                       Foreground="#7CFF9A"
+                                       FontWeight="Bold"
+                                       FontSize="13" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding CodexHome}"
+                                   Foreground="#587A61"
+                                   FontSize="8"
+                                   Margin="14,4,0,0"
+                                   TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button Style="{StaticResource IconButton}"
+                                Click="ToggleSound_Click"
+                                ToolTip="Toggle sound when Codex needs your action">
+                            <Path x:Name="SoundIconPath"
+                                  Data="M3,7 H6 L10,3 V13 L6,9 H3 Z M12,6 C13.2,7 13.2,9 12,10"
+                                  Style="{StaticResource IconPath}" />
+                        </Button>
+                        <Button x:Name="ChatFilterButton"
+                                Style="{StaticResource IconButton}"
+                                Click="ToggleChatFilter_Click"
+                                ToolTip="Filter by chat">
+                            <Path Data="M2,4 H14 L10,8 V13 L6,15 V8 Z"
+                                  Style="{StaticResource IconPath}" />
+                        </Button>
+                        <Button Style="{StaticResource IconButton}"
+                                Click="ClearResolved_Click"
+                                ToolTip="Clear resolved messages">
+                            <Path Data="M3,5 H15 M6,5 V3 H12 V5 M5,7 L6,15 H12 L13,7 M8,8 V13 M10,8 V13"
+                                  Style="{StaticResource IconPath}" />
+                        </Button>
+                        <Button Style="{StaticResource IconButton}"
+                                Click="OpenCodex_Click"
+                                ToolTip="Open Codex">
+                            <Path Data="M3,8 L8,3 H14 V14 H3 Z M8,3 V8 H14 M6,11 H11"
+                                  Style="{StaticResource IconPath}" />
+                        </Button>
+                        <Button Style="{StaticResource IconButton}"
+                                Click="Hide_Click"
+                                ToolTip="Hide to notification area">
+                            <Path Data="M3,8 H13" Style="{StaticResource IconPath}" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Popup x:Name="ChatFilterPopup"
+                   Grid.Row="0"
+                   PlacementTarget="{Binding ElementName=ChatFilterButton}"
+                   Placement="Bottom"
+                   HorizontalOffset="-224"
+                   VerticalOffset="7"
+                   AllowsTransparency="True"
+                   StaysOpen="False"
+                   PopupAnimation="Fade">
+                <Border Width="270"
+                        MaxHeight="330"
+                        Padding="6"
+                        Background="#FF070C09"
+                        BorderBrush="#B05CD77A"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="FILTER // CHAT"
+                                   Foreground="#65C97B"
+                                   FontSize="8"
+                                   FontWeight="Bold"
+                                   Margin="5,3,5,7" />
+                        <ScrollViewer Grid.Row="1"
+                                      MaxHeight="285"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{Binding ChatFilters}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Tag="{Binding ThreadId}"
+                                                Click="ChatFilterOption_Click"
+                                                Margin="0,0,0,3"
+                                                Padding="8,7"
+                                                HorizontalContentAlignment="Stretch"
+                                                Cursor="Hand"
+                                                FocusVisualStyle="{x:Null}"
+                                                Background="Transparent"
+                                                BorderBrush="#353B804B"
+                                                BorderThickness="1">
+                                            <Button.Style>
+                                                <Style TargetType="Button">
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="Button">
+                                                                <Border x:Name="FilterShell"
+                                                                        Background="{TemplateBinding Background}"
+                                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                                        CornerRadius="5"
+                                                                        Padding="{TemplateBinding Padding}">
+                                                                    <ContentPresenter HorizontalAlignment="Stretch" />
+                                                                </Border>
+                                                                <ControlTemplate.Triggers>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter TargetName="FilterShell" Property="Background" Value="#FF112419" />
+                                                                        <Setter TargetName="FilterShell" Property="BorderBrush" Value="#8060C878" />
+                                                                    </Trigger>
+                                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                        <Setter TargetName="FilterShell" Property="Background" Value="#FF174A28" />
+                                                                        <Setter TargetName="FilterShell" Property="BorderBrush" Value="#C05CD77A" />
+                                                                    </DataTrigger>
+                                                                </ControlTemplate.Triggers>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </Button.Style>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Path Data="M3,4 H13 M5,8 H11 M7,12 H9"
+                                                      Stroke="#7CFF9A"
+                                                      StrokeThickness="1.2"
+                                                      StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round"
+                                                      Width="13"
+                                                      Height="13"
+                                                      Stretch="Uniform"
+                                                      Margin="0,0,8,0" />
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Text="{Binding DisplayName}"
+                                                               Foreground="#A6FFBE"
+                                                               FontSize="9"
+                                                               FontWeight="SemiBold"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding ProjectName}"
+                                                               Foreground="#587A61"
+                                                               FontSize="7.5"
+                                                               Margin="0,2,0,0"
+                                                               TextTrimming="CharacterEllipsis">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Style.Triggers>
+                                                                    <Trigger Property="Text" Value="">
+                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                    </Trigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </Popup>
+
+            <Grid Grid.Row="1" Margin="13,10,13,8">
+                <TextBlock Text="LIVE CODEX MESSAGE STREAM"
+                           Foreground="#65C97B"
+                           FontWeight="SemiBold"
+                           FontSize="9" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding ActiveChatFilterText}"
+                               Foreground="#65C97B"
+                               FontSize="8"
+                               Margin="0,0,8,0"
+                               TextTrimming="CharacterEllipsis"
+                               MaxWidth="145" />
+                    <TextBlock Text="{Binding VisibleCountText}"
+                               Foreground="#587A61"
+                               FontSize="8" />
+                </StackPanel>
+            </Grid>
+
+            <ListView x:Name="MessagesList"
+                      Grid.Row="2"
+                      Margin="9,0,6,0"
+                      ItemsSource="{Binding MessagesView}"
+                      Style="{StaticResource CyberListView}"
+                      Foreground="#D2F4DA"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      SelectionChanged="MessagesList_SelectionChanged">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Border x:Name="RowShell"
+                                Tag="{Binding}"
+                                Padding="10,9"
+                                Cursor="Hand"
+                                Background="#FF0B1710"
+                                BorderBrush="#6254B96B"
+                                BorderThickness="1"
+                                CornerRadius="7">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Ellipse x:Name="StatusDot"
+                                             Width="7"
+                                             Height="7"
+                                             Margin="0,1,7,0"
+                                             VerticalAlignment="Top"
+                                             Fill="{Binding StatusBrush}">
+                                        <Ellipse.Style>
+                                            <Style TargetType="Ellipse">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsLatestForThread}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsWorking}" Value="True">
+                                                        <DataTrigger.EnterActions>
+                                                            <BeginStoryboard>
+                                                                <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                                     From="0.35"
+                                                                                     To="1"
+                                                                                     Duration="0:0:0.55" />
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </DataTrigger.EnterActions>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Ellipse.Style>
+                                    </Ellipse>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding HeaderText}"
+                                               Foreground="#74D98A"
+                                               FontSize="8.5"
+                                               FontWeight="SemiBold"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="2"
+                                               Text="{Binding StatusSummary}"
+                                               Foreground="{Binding StatusBrush}"
+                                               FontSize="7"
+                                               Margin="8,0,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsLatestForThread}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+                                <TextBlock Grid.Row="1"
+                                           Text="{Binding Text}"
+                                           Foreground="#D2F4DA"
+                                           FontSize="11"
+                                           Margin="14,6,2,0"
+                                           TextWrapping="Wrap"
+                                           MaxHeight="48"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Row="2"
+                                           Text="{Binding LocalTimeText}"
+                                           Foreground="#587A61"
+                                           FontSize="7.5"
+                                           Margin="14,5,0,0" />
+                            </Grid>
+                        </Border>
+                        <DataTemplate.Triggers>
+                            <Trigger SourceName="RowShell" Property="IsMouseOver" Value="True">
+                                <Setter TargetName="RowShell" Property="Background" Value="#FF112419" />
+                                <Setter TargetName="RowShell" Property="BorderBrush" Value="#8A68E185" />
+                            </Trigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <Border Grid.Row="3"
+                    Margin="9,5,9,9"
+                    Padding="9,6"
+                    CornerRadius="6"
+                    Background="#7208110B"
+                    BorderBrush="#3154B96B"
+                    BorderThickness="1">
+                <TextBlock Text="{Binding FooterStatus}"
+                           Foreground="#5E926B"
+                           FontSize="8"
+                           TextTrimming="CharacterEllipsis" />
+            </Border>
+        </Grid>
+    </Border>
+</Window>

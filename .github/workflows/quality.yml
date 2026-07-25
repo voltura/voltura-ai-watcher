@@ -1,0 +1,72 @@
+name: Quality
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_NOLOGO: true
+  NUGET_XMLDOC_MODE: skip
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check for preinstalled .NET 10 SDK
+        id: dotnet
+        shell: pwsh
+        run: |
+          $available = $false
+          if ($null -ne (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+            $available = [bool](dotnet --list-sdks | Where-Object { $_ -match '^10\.0\.' } | Select-Object -First 1)
+          }
+          "available=$($available.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
+      - name: Setup .NET 10 fallback
+        if: steps.dotnet.outputs.available != 'true'
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build and test
+        shell: pwsh
+        run: dotnet test .\VolturaAiWatcher.Tests\VolturaAiWatcher.Tests.csproj --configuration Release
+
+      - name: Verify generated branding
+        shell: pwsh
+        run: |
+          .\scripts\generate-branding.ps1 -SkipScreenshot
+          $iconBytes = [System.IO.File]::ReadAllBytes(".\VolturaAiWatcher\Assets\voltura-ai-watcher.ico")
+          if ($iconBytes.Length -lt 86 -or [System.BitConverter]::ToUInt16($iconBytes, 2) -ne 1 -or [System.BitConverter]::ToUInt16($iconBytes, 4) -ne 5) {
+            throw "Generated application icon has an invalid ICO directory."
+          }
+          $expectedSizes = @(16, 24, 32, 48, 256)
+          for ($index = 0; $index -lt $expectedSizes.Count; $index++) {
+            $storedSize = [int]$iconBytes[6 + ($index * 16)]
+            $actualSize = if ($storedSize -eq 0) { 256 } else { $storedSize }
+            if ($actualSize -ne $expectedSizes[$index]) {
+              throw "Generated application icon frame $index is ${actualSize}px; expected $($expectedSizes[$index])px."
+            }
+          }
+          Add-Type -AssemblyName System.Drawing
+          $checks = @(
+            @{ Path = ".\installer\assets\installer-header.bmp"; Width = 150; Height = 57 },
+            @{ Path = ".\installer\assets\installer-welcome.bmp"; Width = 164; Height = 314 }
+          )
+          foreach ($check in $checks) {
+            $bitmap = [System.Drawing.Bitmap]::FromFile($check.Path)
+            try {
+              if ($bitmap.Width -ne $check.Width -or $bitmap.Height -ne $check.Height -or $bitmap.PixelFormat -ne [System.Drawing.Imaging.PixelFormat]::Format24bppRgb) {
+                throw "$($check.Path) must be $($check.Width)x$($check.Height) 24-bit RGB."
+              }
+            } finally {
+              $bitmap.Dispose()
+            }
+          }

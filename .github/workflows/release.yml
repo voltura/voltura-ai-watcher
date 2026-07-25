@@ -1,0 +1,159 @@
+name: Publish Voltura AI Watcher release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_NOLOGO: true
+  NUGET_XMLDOC_MODE: skip
+
+jobs:
+  resolve-release:
+    name: Resolve release information
+    runs-on: windows-latest
+    outputs:
+      should_publish: ${{ steps.release.outputs.should_publish }}
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+      runtime: ${{ steps.release.outputs.runtime }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Resolve and validate release information
+        id: release
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PREVIOUS_SHA: ${{ github.event.before }}
+        run: |
+          $projectPath = "VolturaAiWatcher/VolturaAiWatcher.csproj"
+          $project = [xml](Get-Content $projectPath -Raw)
+          $version = [string]$project.Project.PropertyGroup.Version
+          $semVerPattern = '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$'
+          if ($version -notmatch $semVerPattern) {
+            throw "Project version '$version' is not supported semantic versioning."
+          }
+
+          $tag = "v$version"
+          git check-ref-format "refs/tags/$tag"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Derived release tag '$tag' is invalid."
+          }
+
+          $shouldPublish = $true
+          if ($env:EVENT_NAME -eq "push") {
+            if ($env:PREVIOUS_SHA -match '^0+$') {
+              $shouldPublish = $false
+              Write-Host "Initial repository push detected; no release will be published until the version changes or the workflow is dispatched manually."
+            } else {
+              $previousContent = git show "$env:PREVIOUS_SHA`:$projectPath" 2>$null
+              if ($LASTEXITCODE -eq 0) {
+                $previousText = ($previousContent -join [System.Environment]::NewLine).TrimStart([char]0xFEFF)
+                $previousProject = [xml]$previousText
+                $previousVersion = [string]$previousProject.Project.PropertyGroup.Version
+                if ($previousVersion -eq $version) {
+                  $shouldPublish = $false
+                  Write-Host "Project version remains $version; no release will be published."
+                }
+              }
+            }
+          }
+
+          "should_publish=$($shouldPublish.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "runtime=win-x64" >> $env:GITHUB_OUTPUT
+
+  build-and-publish-release:
+    name: Build and publish release
+    needs: resolve-release
+    if: needs.resolve-release.outputs.should_publish == 'true'
+    concurrency:
+      group: release-${{ needs.resolve-release.outputs.tag }}
+      cancel-in-progress: false
+    runs-on: windows-latest
+    env:
+      RELEASE_VERSION: ${{ needs.resolve-release.outputs.version }}
+      RELEASE_TAG: ${{ needs.resolve-release.outputs.tag }}
+      RUNTIME: ${{ needs.resolve-release.outputs.runtime }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check for preinstalled .NET 10 SDK
+        id: dotnet
+        shell: pwsh
+        run: |
+          $available = $false
+          if ($null -ne (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+            $available = [bool](dotnet --list-sdks | Where-Object { $_ -match '^10\.0\.' } | Select-Object -First 1)
+          }
+          "available=$($available.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
+      - name: Setup .NET 10 fallback
+        if: steps.dotnet.outputs.available != 'true'
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Validate release version
+        shell: pwsh
+        run: .\scripts\verify-release-version.ps1 -Version $env:RELEASE_VERSION
+
+      - name: Test
+        shell: pwsh
+        run: dotnet test .\VolturaAiWatcher.Tests\VolturaAiWatcher.Tests.csproj --configuration Release
+
+      - name: Install NSIS
+        shell: pwsh
+        run: choco install nsis --version=3.12.0 -y --no-progress
+
+      - name: Package release assets
+        shell: pwsh
+        run: .\scripts\package-win.ps1 -Version $env:RELEASE_VERSION -Runtime $env:RUNTIME
+
+      - name: Reject an existing release tag
+        shell: pwsh
+        run: |
+          $remoteTag = git ls-remote --tags origin "refs/tags/$env:RELEASE_TAG"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not verify whether release tag '$env:RELEASE_TAG' already exists."
+          }
+          if ($remoteTag) {
+            throw "Release tag '$env:RELEASE_TAG' already exists. Prepare a new version instead of moving it."
+          }
+
+      - name: Create draft release and upload installers
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $smallInstaller = "artifacts/publish/VolturaAiWatcher-Setup-$env:RELEASE_VERSION-$env:RUNTIME.exe"
+          $fullInstaller = "artifacts/publish/VolturaAiWatcher-Setup-$env:RELEASE_VERSION-$env:RUNTIME-full.exe"
+          $arguments = @(
+            "release", "create", $env:RELEASE_TAG,
+            "--repo", $env:GITHUB_REPOSITORY,
+            "--target", $env:GITHUB_SHA,
+            "--title", "Voltura AI Watcher $env:RELEASE_TAG",
+            "--draft",
+            "--generate-notes",
+            "--fail-on-no-commits",
+            "--notes", "Voltura AI Watcher is free software from Voltura AB. If it helps you, optional support links are available through Ko-fi and PayPal."
+          )
+          if ($env:RELEASE_VERSION.Contains("-")) {
+            $arguments += "--prerelease"
+          }
+          $arguments += @($smallInstaller, $fullInstaller)
+          & gh @arguments
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
