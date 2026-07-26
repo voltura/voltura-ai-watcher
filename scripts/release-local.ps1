@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$Version
+    [string]$Version,
+    [switch]$SkipValidation
 )
 
 Set-StrictMode -Version Latest
@@ -171,7 +172,10 @@ try
         throw "Local releases are supported only on Windows."
     }
 
-    & (Join-Path $PSScriptRoot "test-release-tools.ps1")
+    if (-not $SkipValidation)
+    {
+        & (Join-Path $PSScriptRoot "test-release-tools.ps1")
+    }
 
     foreach ($requiredCommand in @("git", "dotnet", "gh"))
     {
@@ -307,7 +311,10 @@ try
     }
 
     & (Join-Path $PSScriptRoot "generate-branding.ps1")
-    Invoke-Checked dotnet test ".\VolturaAiWatcher.Tests\VolturaAiWatcher.Tests.csproj" --configuration Release
+    if (-not $SkipValidation)
+    {
+        Invoke-Checked dotnet test ".\VolturaAiWatcher.Tests\VolturaAiWatcher.Tests.csproj" --configuration Release
+    }
     & dotnet build-server shutdown | Out-Host
     Start-Sleep -Milliseconds 800
     Invoke-ReleasePackaging -ReleaseVersion $targetVersion
