@@ -92,12 +92,23 @@ Section "Install"
   ReadRegStr $R0 HKCU "${RUN_KEY}" "${RUN_VALUE}"
 
   !ifdef FRAMEWORK_DEPENDENT
-  nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "$$ErrorActionPreference=$\'Stop$\'; $$runtime=$\'10.0$\'; $$dotnet=Join-Path $$env:ProgramFiles $\'dotnet\dotnet.exe$\'; function Test-Runtime { if (-not (Test-Path -LiteralPath $$dotnet -PathType Leaf)) { return $$false }; $$runtimes=& $$dotnet --list-runtimes; if ($$LASTEXITCODE -ne 0) { return $$false }; return $$runtimes -match ($\'^Microsoft\.WindowsDesktop\.App $\'+[regex]::Escape($$runtime)+$\'\.$\') }; if (-not (Test-Runtime)) { $$installer=Join-Path $$env:TEMP ($\'VolturaAiWatcher-WindowsDesktop-$\'+$$runtime+$\'-win-x64.exe$\'); try { Invoke-WebRequest -Uri ($\'https://aka.ms/dotnet/$\'+$$runtime+$\'/windowsdesktop-runtime-win-x64.exe$\') -OutFile $$installer; $$signature=Get-AuthenticodeSignature -FilePath $$installer; if ($$signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid) { throw $\'The downloaded .NET Windows Desktop runtime did not have a valid Authenticode signature.$\' }; $$process=Start-Process -FilePath $$installer -ArgumentList @($\'/install$\',$\'/quiet$\',$\'/norestart$\') -Verb RunAs -Wait -PassThru; if ($$process.ExitCode -notin 0,3010) { throw ($\'.NET runtime installer failed with exit code $\'+$$process.ExitCode) } } finally { Remove-Item -LiteralPath $$installer -Force -ErrorAction SilentlyContinue } }; if (-not (Test-Runtime)) { throw ($\'.NET $\'+$$runtime+$\' Windows Desktop runtime was not available after installation.$\') }"'
+  Call TestRequiredRuntime
   Pop $0
-  Pop $1
   ${If} $0 != 0
-    MessageBox MB_ICONSTOP "The required .NET 10 Windows Desktop runtime could not be installed.$\r$\n$\r$\nDetails:$\r$\n$1"
-    Abort "The required .NET runtime was not installed."
+    nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "$$ErrorActionPreference=$\'Stop$\';$$v=$\'10.0$\';$$p=Join-Path $$env:TEMP ($\'VolturaAiWatcher-WindowsDesktop-$\'+$$v+$\'-win-x64.exe$\');try{Invoke-WebRequest -Uri ($\'https://aka.ms/dotnet/$\'+$$v+$\'/windowsdesktop-runtime-win-x64.exe$\') -OutFile $$p;$$s=Get-AuthenticodeSignature -FilePath $$p;if($$s.Status-ne [System.Management.Automation.SignatureStatus]::Valid){throw $\'The downloaded .NET Windows Desktop runtime did not have a valid Authenticode signature.$\'};$$x=Start-Process -FilePath $$p -ArgumentList $\'/install$\',$\'/quiet$\',$\'/norestart$\' -Verb RunAs -Wait -PassThru;if($$x.ExitCode-notin 0,3010){throw($\'.NET runtime installer failed with exit code $\'+$$x.ExitCode)}}finally{Remove-Item -LiteralPath $$p -Force -ErrorAction SilentlyContinue}"'
+    Pop $0
+    Pop $1
+    ${If} $0 != 0
+      MessageBox MB_ICONSTOP "The .NET 10 Windows Desktop runtime installation failed.$\r$\n$\r$\nDetails:$\r$\n$1"
+      Abort ".NET runtime setup failed."
+    ${EndIf}
+
+    Call TestRequiredRuntime
+    Pop $0
+    ${If} $0 != 0
+      MessageBox MB_ICONSTOP "The .NET 10 Windows Desktop runtime was not available after installation."
+      Abort ".NET runtime setup failed."
+    ${EndIf}
   ${EndIf}
   !endif
 
@@ -138,6 +149,13 @@ Section "Uninstall"
   DeleteRegValue HKCU "${RUN_KEY}" "${RUN_VALUE}"
   RMDir /r "$INSTDIR"
 SectionEnd
+
+Function TestRequiredRuntime
+  nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "$$d=Join-Path $$env:ProgramFiles $\'dotnet\dotnet.exe$\';if(-not(Test-Path -LiteralPath $$d -PathType Leaf)){exit 1};$$r=& $$d --list-runtimes;if($$LASTEXITCODE-ne 0){exit 1};if($$r-match $\'^Microsoft\.WindowsDesktop\.App 10\.0\.$\'){exit 0};exit 1"'
+  Pop $0
+  Pop $1
+  Push $0
+FunctionEnd
 
 Function PromptCloseRunningApp
   nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "if (Get-Process -Name $\'Voltura AI Watcher$\',$\'VolturaAiWatcher$\' -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }"'

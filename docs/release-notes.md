@@ -1,3 +1,7 @@
+## v0.1.4
+
+- Corrected .NET framework install logic.
+
 ## v0.1.3
 
 - Corrected .NET framework install logic.
