@@ -1,3 +1,7 @@
+## v0.1.3
+
+- Corrected .NET framework install logic.
+
 ## v0.1.2
 
 - Clears all visible rows for chats that have reached a resolved state, including earlier work updates from the same chat.

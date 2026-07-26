@@ -34,6 +34,24 @@ $smallPublishDirectory = Join-Path $publishRoot "VolturaAiWatcher-$Runtime-frame
 $fullInstallerPath = Join-Path $publishRoot "VolturaAiWatcher-Setup-$Version-$Runtime-full.exe"
 $smallInstallerPath = Join-Path $publishRoot "VolturaAiWatcher-Setup-$Version-$Runtime.exe"
 $installerScript = Join-Path $projectRoot "installer\VolturaAiWatcher.nsi"
+$installerDirectory = Join-Path $projectRoot "installer"
+
+$installerSource = [System.IO.File]::ReadAllText($installerScript)
+if ($installerSource -match '(?i)powershell(?:\.exe)?[^\r\n]*\s-File(?:\s|")') {
+    throw "Installer policy violation: PowerShell -File execution is not allowed in $installerScript."
+}
+if (Get-ChildItem -LiteralPath $installerDirectory -File -Filter "*.ps1") {
+    throw "Installer policy violation: .ps1 scripts must not be stored in $installerDirectory."
+}
+foreach ($requiredBootstrapText in @(
+    "-Command",
+    "https://aka.ms/dotnet/",
+    "windowsdesktop-runtime-win-x64.exe",
+    "Get-AuthenticodeSignature")) {
+    if (-not $installerSource.Contains($requiredBootstrapText, [System.StringComparison]::Ordinal)) {
+        throw "Installer runtime bootstrap is missing required text '$requiredBootstrapText'."
+    }
+}
 
 if (-not $publishRoot.StartsWith($projectRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
     throw "Publish root escaped the project directory: $publishRoot"

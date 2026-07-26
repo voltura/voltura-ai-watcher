@@ -35,6 +35,7 @@
 - NSIS artwork must remain opaque 24-bit BMP at exactly `150x57` and `164x314`.
 - `scripts/package-win.ps1` creates both the compact framework-dependent installer and the offline self-contained installer under `artifacts/publish`.
 - The compact installer installs the signed .NET 10 Windows Desktop runtime from Microsoft only when it is missing.
+- Keep the runtime bootstrap as an inline PowerShell `-Command`. Never embed, extract, or execute a `.ps1` installer script, and never invoke PowerShell with `-File`.
 - Release binaries are intentionally unsigned; release notes must mention the possible Windows unknown-publisher or SmartScreen warning.
 
 ## Versioning And Releases
