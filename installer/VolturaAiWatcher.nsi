@@ -95,7 +95,7 @@ Section "Install"
   Call TestRequiredRuntime
   Pop $0
   ${If} $0 != 0
-    nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "$$ErrorActionPreference=$\'Stop$\';$$v=$\'10.0$\';$$p=Join-Path $$env:TEMP ($\'VolturaAiWatcher-WindowsDesktop-$\'+$$v+$\'-win-x64.exe$\');try{Invoke-WebRequest -Uri ($\'https://aka.ms/dotnet/$\'+$$v+$\'/windowsdesktop-runtime-win-x64.exe$\') -OutFile $$p;$$s=Get-AuthenticodeSignature -FilePath $$p;if($$s.Status-ne [System.Management.Automation.SignatureStatus]::Valid){throw $\'The downloaded .NET Windows Desktop runtime did not have a valid Authenticode signature.$\'};$$x=Start-Process -FilePath $$p -ArgumentList $\'/install$\',$\'/quiet$\',$\'/norestart$\' -Verb RunAs -Wait -PassThru;if($$x.ExitCode-notin 0,3010){throw($\'.NET runtime installer failed with exit code $\'+$$x.ExitCode)}}finally{Remove-Item -LiteralPath $$p -Force -ErrorAction SilentlyContinue}"'
+    nsExec::ExecToStack '"$WINDIR\Sysnative\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "$$ErrorActionPreference=$\'Stop$\';$$v=$\'10.0$\';$$p=Join-Path $$env:TEMP ($\'VolturaAiWatcher-WindowsDesktop-$\'+$$v+$\'-win-x64.exe$\');try{Invoke-WebRequest -Uri ($\'https://aka.ms/dotnet/$\'+$$v+$\'/windowsdesktop-runtime-win-x64.exe$\') -OutFile $$p;$$s=Get-AuthenticodeSignature -FilePath $$p;if($$s.Status-ne [System.Management.Automation.SignatureStatus]::Valid){throw $\'The downloaded .NET Windows Desktop runtime did not have a valid Authenticode signature.$\'};$$x=Start-Process -FilePath $$p -ArgumentList $\'/install$\',$\'/quiet$\',$\'/norestart$\' -Verb RunAs -Wait -PassThru;if($$x.ExitCode-notin 0,3010){throw($\'.NET runtime installer failed with exit code $\'+$$x.ExitCode)}}finally{Remove-Item -LiteralPath $$p -Force -ErrorAction SilentlyContinue}"'
     Pop $0
     Pop $1
     ${If} $0 != 0
@@ -151,7 +151,7 @@ Section "Uninstall"
 SectionEnd
 
 Function TestRequiredRuntime
-  nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "$$d=Join-Path $$env:ProgramFiles $\'dotnet\dotnet.exe$\';if(-not(Test-Path -LiteralPath $$d -PathType Leaf)){exit 1};$$r=& $$d --list-runtimes;if($$LASTEXITCODE-ne 0){exit 1};if($$r-match $\'^Microsoft\.WindowsDesktop\.App 10\.0\.$\'){exit 0};exit 1"'
+  nsExec::ExecToStack '"$WINDIR\Sysnative\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command "$$d=$\'$PROGRAMFILES64\dotnet\dotnet.exe$\';if(-not(Test-Path -LiteralPath $$d -PathType Leaf)){exit 1};$$r=& $$d --list-runtimes;if($$LASTEXITCODE-ne 0){exit 1};if($$r-match $\'^Microsoft\.WindowsDesktop\.App 10\.0\.$\'){exit 0};exit 1"'
   Pop $0
   Pop $1
   Push $0
