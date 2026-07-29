@@ -304,6 +304,7 @@ internal static class MessageDocumentBuilder
                 ToolTip = ReferencedFileToolTipFormatter.FormatDirectOpen(block.FilePath),
                 Tag = block.FilePath
             };
+            System.Windows.Controls.ToolTipService.SetInitialShowDelay(link, 60);
             link.Click += (_, _) => ReferencedFileActions.OpenPath(block.FilePath);
             paragraph.Inlines.Add(link);
         }
@@ -371,6 +372,7 @@ internal static class MessageDocumentBuilder
                 ? ReferencedFileToolTipFormatter.FormatDirectOpen(inline.Target!)
                 : inline.Target
         };
+        System.Windows.Controls.ToolTipService.SetInitialShowDelay(link, 60);
         link.Click += (_, args) =>
         {
             args.Handled = true;

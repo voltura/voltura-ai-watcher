@@ -38,6 +38,8 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Padding" Value="7,4" />
             <Setter Property="FontSize" Value="10" />
+            <Setter Property="Placement" Value="Top" />
+            <Setter Property="VerticalOffset" Value="-6" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ToolTip">
@@ -79,7 +81,6 @@
         <Style TargetType="MenuItem">
             <Setter Property="OverridesDefaultStyle" Value="True" />
             <Setter Property="ToolTipService.InitialShowDelay" Value="60" />
-            <Setter Property="ToolTipService.ShowOnDisabled" Value="True" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Background" Value="#FF0A0F0C" />
             <Setter Property="BorderBrush" Value="#704BFF7A" />
@@ -126,6 +127,7 @@
         </Style>
 
         <Style x:Key="IconButton" TargetType="Button">
+            <Setter Property="ToolTipService.InitialShowDelay" Value="60" />
             <Setter Property="Width" Value="28" />
             <Setter Property="Height" Value="26" />
             <Setter Property="Margin" Value="3,0,0,0" />

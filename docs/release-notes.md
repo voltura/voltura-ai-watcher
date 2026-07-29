@@ -1,3 +1,7 @@
+## v0.1.7
+
+- Shows themed tooltips quickly above enabled icons whenever screen space allows, while disabled actions stay quiet.
+
 ## v0.1.6
 
 - Explains which file the Open file action will open and why it was selected, while direct file links show their exact target.

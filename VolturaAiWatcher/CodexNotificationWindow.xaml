@@ -24,6 +24,8 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Padding" Value="6,3" />
             <Setter Property="FontSize" Value="9" />
+            <Setter Property="Placement" Value="Top" />
+            <Setter Property="VerticalOffset" Value="-6" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ToolTip">
@@ -40,7 +42,6 @@
         </Style>
         <Style x:Key="HeaderActionButton" TargetType="Button">
             <Setter Property="ToolTipService.InitialShowDelay" Value="60" />
-            <Setter Property="ToolTipService.ShowOnDisabled" Value="True" />
             <Setter Property="Width" Value="24" />
             <Setter Property="Height" Value="22" />
             <Setter Property="Padding" Value="4" />
