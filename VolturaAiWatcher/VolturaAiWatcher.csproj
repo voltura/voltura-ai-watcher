@@ -9,7 +9,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Assets\voltura-ai-watcher.ico</ApplicationIcon>
     <AssemblyName>Voltura AI Watcher</AssemblyName>
-    <Version>0.1.6</Version>
+    <Version>0.1.7</Version>
     <AssemblyTitle>Voltura AI Watcher</AssemblyTitle>
     <Product>Voltura AI Watcher</Product>
     <Company>Voltura AB</Company>
