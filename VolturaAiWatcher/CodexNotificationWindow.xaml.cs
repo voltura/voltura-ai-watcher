@@ -6,16 +6,14 @@ public partial class CodexNotificationWindow : System.Windows.Window, System.IDi
     private const uint SetWindowPosNoSize = 0x0001;
     private readonly System.Func<CodexMessageEntry, System.Threading.Tasks.Task> _openMessage;
     private readonly System.Windows.Threading.DispatcherTimer _dismissTimer;
+    private int _durationSeconds = NotificationDurationPolicy.DefaultSeconds;
     private bool _allowClose;
 
     public CodexNotificationWindow(System.Func<CodexMessageEntry, System.Threading.Tasks.Task> openMessage)
     {
         InitializeComponent();
         _openMessage = openMessage;
-        _dismissTimer = new System.Windows.Threading.DispatcherTimer
-        {
-            Interval = System.TimeSpan.FromSeconds(8)
-        };
+        _dismissTimer = new System.Windows.Threading.DispatcherTimer();
         _dismissTimer.Tick += (_, _) => Dismiss();
         SourceInitialized += (_, _) => PositionAboveTaskbar();
     }
@@ -44,8 +42,9 @@ public partial class CodexNotificationWindow : System.Windows.Window, System.IDi
     [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
     private static extern bool GetWindowRect(System.IntPtr windowHandle, out NativeRect rect);
 
-    public void ShowMessage(CodexMessageEntry entry)
+    public void ShowMessage(CodexMessageEntry entry, int durationSeconds)
     {
+        _durationSeconds = NotificationDurationPolicy.NormalizePersisted(durationSeconds);
         DataContext = entry;
         _dismissTimer.Stop();
         if (!IsVisible)
@@ -62,7 +61,7 @@ public partial class CodexNotificationWindow : System.Windows.Window, System.IDi
                 To = 1,
                 Duration = System.TimeSpan.FromMilliseconds(170)
             });
-        _dismissTimer.Start();
+        StartDismissTimer();
     }
 
     public void RefreshForThread(string threadId)
@@ -71,8 +70,19 @@ public partial class CodexNotificationWindow : System.Windows.Window, System.IDi
             string.Equals(entry.ThreadId, threadId, System.StringComparison.Ordinal))
         {
             _dismissTimer.Stop();
-            _dismissTimer.Start();
+            StartDismissTimer();
         }
+    }
+
+    private void StartDismissTimer()
+    {
+        if (_durationSeconds <= 0)
+        {
+            return;
+        }
+
+        _dismissTimer.Interval = System.TimeSpan.FromSeconds(_durationSeconds);
+        _dismissTimer.Start();
     }
 
     public void Dismiss()

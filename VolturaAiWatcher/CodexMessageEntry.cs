@@ -8,7 +8,7 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
     private bool _isCleared;
     private bool _isLatestForThread;
     private string _text = string.Empty;
-    private JsonMessagePresentation? _jsonPresentation;
+    private StructuredMessagePresentation? _structuredPresentation;
 
     public required string Id { get; init; }
     public required string ThreadId { get; init; }
@@ -21,7 +21,7 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
         init
         {
             _text = value;
-            _jsonPresentation = JsonMessageFormatter.TryFormat(value);
+            _structuredPresentation = StructuredMessageFormatter.TryFormat(value);
         }
     }
     public required System.DateTimeOffset OccurredAt { get; init; }
@@ -78,9 +78,9 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
     }
 
     public string HeaderText => $"{Sender.ToUpperInvariant()} // {ProjectName.ToUpperInvariant()} // {ChatTitle.ToUpperInvariant()}";
-    public string PreviewText => _jsonPresentation?.PreviewText ?? Text;
-    public string DisplayText => _jsonPresentation?.DetailText ?? Text;
-    public string DetailHeading => _jsonPresentation is null ? "COMPLETE CODEX MESSAGE" : "STRUCTURED CODEX MESSAGE";
+    public string PreviewText => _structuredPresentation?.PreviewText ?? Text;
+    public string DisplayText => _structuredPresentation?.DetailText ?? Text;
+    public string DetailHeading => _structuredPresentation is null ? "COMPLETE CODEX MESSAGE" : "STRUCTURED CODEX MESSAGE";
     public string LocalTimeText => OccurredAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
     public string StatusLabel => CodexChatStatusPolicy.GetLabel(Status);
     public System.Windows.Media.Brush StatusBrush =>
@@ -88,10 +88,13 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
             CodexChatStatusPolicy.GetColor(Status))!;
     public bool IsWorking => Status is CodexChatStatus.Starting or CodexChatStatus.Working;
     public string StatusSummary => IsUnread ? $"{StatusLabel} · UNREAD" : StatusLabel;
-    public string? ReferencedFilePath { get; init; }
+    public ReferencedFileResolution? ReferencedFileReference { get; init; }
+    public string? ReferencedFilePath => ReferencedFileReference?.Path;
     public bool IsReferencedFileAvailable =>
         !string.IsNullOrWhiteSpace(ReferencedFilePath) &&
         System.IO.File.Exists(ReferencedFilePath);
+    public string ReferencedFileOpenToolTip =>
+        ReferencedFileToolTipFormatter.FormatAutomaticOpen(ReferencedFileReference);
 
     public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
 

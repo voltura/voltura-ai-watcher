@@ -18,7 +18,7 @@
 !define EXE_NAME "Voltura AI Watcher.exe"
 !define PUBLISHER "Voltura AB"
 !define DEVELOPER "Joakim Skoglund"
-!define PRODUCT_URL "https://github.com/voltura/voltura-ai-watcher"
+!define PRODUCT_URL "https://voltura.github.io/voltura-ai-watcher/"
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Voltura AI Watcher"
 !define RUN_KEY "Software\Microsoft\Windows\CurrentVersion\Run"
 !define RUN_VALUE "VolturaAiWatcher"

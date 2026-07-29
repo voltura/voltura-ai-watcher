@@ -47,6 +47,8 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
     {
         InitializeComponent();
         _settings = LoadSettings();
+        _settings.NotificationDurationSeconds = NotificationDurationPolicy.NormalizePersisted(
+            _settings.NotificationDurationSeconds);
         _sparkSoundPath = System.IO.Path.Combine(
             System.AppContext.BaseDirectory,
             "Assets",
@@ -144,6 +146,8 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
 
     public void ShowFromTray()
     {
+        _notificationWindow.Dismiss();
+
         if (!IsVisible)
         {
             Show();
@@ -211,7 +215,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
                 Text = message.Text,
                 OccurredAt = message.OccurredAt,
                 Status = status,
-                ReferencedFilePath = ReferencedFileResolver.ResolveFirstExistingFile(
+                ReferencedFileReference = ReferencedFileResolver.ResolveFirstExistingFileReference(
                     message.Text,
                     message.WorkingDirectory),
                 IsUnread = _unreadThreads.Contains(message.ThreadId) || (!historical && message.Sender == "Codex"),
@@ -235,7 +239,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
 
             if (!historical && (!IsVisible || WindowState == System.Windows.WindowState.Minimized))
             {
-                _notificationWindow.ShowMessage(entry);
+                ShowNotification(entry);
             }
 
         }));
@@ -286,7 +290,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
                 needsAttention &&
                 (!IsVisible || WindowState == System.Windows.WindowState.Minimized))
             {
-                _notificationWindow.ShowMessage(latest);
+                ShowNotification(latest);
             }
             else
             {
@@ -441,7 +445,10 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
 
         entry.IsUnread = false;
         _unreadThreads.Remove(entry.ThreadId);
-        var visibleEntries = _messagesView.Cast<CodexMessageEntry>().ToArray();
+        var visibleEntries = _messagesView
+            .Cast<CodexMessageEntry>()
+            .OrderByDescending(message => message.OccurredAt)
+            .ToArray();
         var detail = new MessageDetailWindow(entry, visibleEntries, OpenMessageAsync)
         {
             Owner = this
@@ -723,6 +730,16 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         TrayIconVisibilityPromoter.PromoteWhenReady(_trayComponents, _notifyIcon);
     }
 
+    private void ShowNotification(CodexMessageEntry entry)
+    {
+        if (_settings.NotificationDurationSeconds == NotificationDurationPolicy.Off)
+        {
+            return;
+        }
+
+        _notificationWindow.ShowMessage(entry, _settings.NotificationDurationSeconds);
+    }
+
     private System.Windows.Forms.ContextMenuStrip CreateTrayMenu()
     {
         var menu = new System.Windows.Forms.ContextMenuStrip(_trayComponents);
@@ -783,11 +800,72 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         _playSoundMenuItem.Checked = _settings.PlaySoundOnMessage;
         _playSoundMenuItem.Click += (_, _) => Dispatcher.Invoke(() =>
             SetPlaySoundEnabled(_playSoundMenuItem.Checked, previewWhenEnabled: true));
+        var notificationDuration = CreateMenuItem("Notification display time");
+        ApplyDropDownTheme(notificationDuration.DropDown);
+        var durationItems = new System.Collections.Generic.Dictionary<int, System.Windows.Forms.ToolStripMenuItem>();
+        var durationChoices = new (int Seconds, string Label)[]
+        {
+            (NotificationDurationPolicy.Off, "Off"),
+            (5, "5 seconds"),
+            (10, "10 seconds"),
+            (NotificationDurationPolicy.UntilDismissed, "Until dismissed")
+        };
+        var customDuration = CreateMenuItem("Custom...");
+
+        void UpdateDurationChecks()
+        {
+            foreach (var pair in durationItems)
+            {
+                pair.Value.Checked = pair.Key == _settings.NotificationDurationSeconds;
+            }
+
+            customDuration.Checked = !NotificationDurationPolicy.IsPreset(
+                _settings.NotificationDurationSeconds);
+        }
+
+        foreach (var choice in durationChoices)
+        {
+            var durationItem = CreateMenuItem(choice.Label);
+            durationItem.Click += (_, _) => Dispatcher.Invoke(() =>
+            {
+                _settings.NotificationDurationSeconds = choice.Seconds;
+                UpdateDurationChecks();
+                if (choice.Seconds == NotificationDurationPolicy.Off)
+                {
+                    _notificationWindow.Dismiss();
+                }
+
+                SaveSettings();
+            });
+            durationItems.Add(choice.Seconds, durationItem);
+            notificationDuration.DropDownItems.Add(durationItem);
+        }
+
+        customDuration.Click += (_, _) => Dispatcher.Invoke(() =>
+        {
+            var dialog = new NotificationDurationDialog(
+                _settings.NotificationDurationSeconds,
+                System.Windows.Forms.Cursor.Position);
+            if (IsVisible && WindowState is not System.Windows.WindowState.Minimized)
+            {
+                dialog.Owner = this;
+            }
+
+            if (dialog.ShowDialog() is true)
+            {
+                _settings.NotificationDurationSeconds = dialog.DurationSeconds;
+                UpdateDurationChecks();
+                SaveSettings();
+            }
+        });
+        notificationDuration.DropDownItems.Add(customDuration);
+        UpdateDurationChecks();
         settings.DropDownItems.AddRange(
             [
                 _startMinimizedMenuItem,
                 _startWithWindowsMenuItem,
                 _playSoundMenuItem,
+                notificationDuration,
                 _showClearedMenuItem
             ]);
 
@@ -798,7 +876,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         version.ForeColor = System.Drawing.Color.FromArgb(124, 255, 154);
         version.Padding = new System.Windows.Forms.Padding(8, 5, 10, 5);
         var projectPage = CreateMenuItem("Project page");
-        projectPage.Click += (_, _) => OpenWebPage("https://github.com/voltura/voltura-ai-watcher");
+        projectPage.Click += (_, _) => OpenWebPage("https://voltura.github.io/voltura-ai-watcher/");
         var latestRelease = CreateMenuItem("Latest release");
         latestRelease.Click += (_, _) => OpenWebPage("https://github.com/voltura/voltura-ai-watcher/releases/latest");
         about.DropDownItems.AddRange([version, projectPage, latestRelease]);

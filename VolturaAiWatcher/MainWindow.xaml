@@ -1,6 +1,7 @@
 <Window x:Class="VolturaAiWatcher.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:VolturaAiWatcher"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         Title="Voltura AI Watcher"
         Width="392"
@@ -514,7 +515,7 @@
                                     <MenuItem Click="OpenReferencedFile_Click"
                                               Tag="{Binding}"
                                               IsEnabled="{Binding IsReferencedFileAvailable}"
-                                              ToolTip="Open referenced file">
+                                              ToolTip="{Binding ReferencedFileOpenToolTip}">
                                         <MenuItem.Icon>
                                             <Path Data="M4,3 H9 L11,5 H14 V14 H4 Z M7,9 H12 M10,6 L13,9 L10,12"
                                                   Style="{StaticResource ContextActionIcon}" />
@@ -595,14 +596,15 @@
                                         </TextBlock.Style>
                                     </TextBlock>
                                 </Grid>
-                                <TextBlock Grid.Row="1"
-                                           Text="{Binding PreviewText}"
-                                           Foreground="#D2F4DA"
-                                           FontSize="11"
-                                           Margin="14,6,2,0"
-                                           TextWrapping="Wrap"
-                                           MaxHeight="48"
-                                           TextTrimming="CharacterEllipsis" />
+                                <local:CompactMessagePreview Grid.Row="1"
+                                                             MessageText="{Binding PreviewText}"
+                                                             WorkingDirectory="{Binding WorkingDirectory}"
+                                                             Foreground="#D2F4DA"
+                                                             FontSize="11"
+                                                             Margin="14,6,2,0"
+                                                             TextWrapping="Wrap"
+                                                             MaxHeight="48"
+                                                             TextTrimming="CharacterEllipsis" />
                                 <TextBlock Grid.Row="2"
                                            Text="{Binding LocalTimeText}"
                                            Foreground="#587A61"

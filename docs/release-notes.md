@@ -1,6 +1,16 @@
 ## v0.1.6
 
+- Explains which file the Open file action will open and why it was selected, while direct file links show their exact target.
 - Makes the compact installer verify and install the required Microsoft .NET runtime more reliably, including clear restart and failure handling.
+- Adds a separate action for copying the readable version of structured messages.
+- Separates approval details, planned actions, and transcript events so mixed structured messages are easier to review.
+- Styles message headings in the stream, minimized notification, and detail view, and opens linked local files from the formatted detail.
+- Adds a close shortcut to the message header.
+- Makes web addresses and referenced local files clickable in formatted messages.
+- Opens product-page links on the dedicated Voltura AI Watcher website.
+- Lets you choose how long minimized notifications remain visible from the notification-area Settings menu.
+- Makes Next open the newer visible message above the current one and Previous open the older message below it.
+- Hides the minimized notification when the main message list is opened.
 
 ## v0.1.5
 

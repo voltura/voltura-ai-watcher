@@ -96,6 +96,51 @@
             <Setter Property="StrokeEndLineCap" Value="Square" />
             <Setter Property="Fill" Value="Transparent" />
         </Style>
+        <Style x:Key="DetailHeaderActionButton" TargetType="Button">
+            <Setter Property="ToolTipService.InitialShowDelay" Value="60" />
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Background" Value="#B008110B" />
+            <Setter Property="BorderBrush" Value="#485EBB70" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Shell"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Shell" Property="Background" Value="#E0142017" />
+                                <Setter TargetName="Shell" Property="BorderBrush" Value="#B07CFF9A" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Shell" Property="Opacity" Value="0.6" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="DetailHeaderActionIcon" TargetType="Path">
+            <Setter Property="Stroke" Value="#7CFF9A" />
+            <Setter Property="StrokeThickness" Value="1.45" />
+            <Setter Property="Fill" Value="Transparent" />
+            <Setter Property="StrokeStartLineCap" Value="Round" />
+            <Setter Property="StrokeEndLineCap" Value="Round" />
+            <Setter Property="StrokeLineJoin" Value="Round" />
+            <Setter Property="Stretch" Value="Uniform" />
+            <Setter Property="Width" Value="13" />
+            <Setter Property="Height" Value="13" />
+        </Style>
         <Style x:Key="DetailThumb" TargetType="Thumb">
             <Setter Property="MinHeight" Value="34" />
             <Setter Property="Template">
@@ -154,6 +199,7 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Ellipse Width="8"
                          Height="8"
@@ -170,7 +216,15 @@
                            Foreground="{Binding StatusBrush}"
                            FontSize="9"
                            FontWeight="Bold"
-                           VerticalAlignment="Center" />
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0" />
+                <Button Grid.Column="3"
+                        Style="{StaticResource DetailHeaderActionButton}"
+                        ToolTip="Close message"
+                        Click="Close_Click">
+                    <Path Data="M3,3 L13,13 M13,3 L3,13"
+                          Style="{StaticResource DetailHeaderActionIcon}" />
+                </Button>
             </Grid>
 
             <StackPanel Grid.Row="1" Margin="0,14,0,10">
@@ -191,19 +245,17 @@
                     BorderThickness="1"
                     CornerRadius="7"
                     Padding="12">
-                <ScrollViewer VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled"
-                              PanningMode="VerticalOnly">
-                    <TextBlock Text="{Binding DisplayText}"
-                               Foreground="#D2F4DA"
-                               FontSize="13"
-                               LineHeight="19"
-                               TextWrapping="Wrap" />
-                </ScrollViewer>
+                <FlowDocumentScrollViewer x:Name="MessageBodyViewer"
+                                          Background="Transparent"
+                                          BorderThickness="0"
+                                          IsToolBarVisible="False"
+                                          VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled" />
             </Border>
 
             <Grid Grid.Row="3" Margin="0,12,0,0">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Left">
                     <Button x:Name="PreviousButton"
                             Style="{StaticResource DetailButton}"
                             Margin="0"
@@ -216,11 +268,12 @@
                             ToolTip="Show the next, newer visible message"
                             Click="Next_Click" />
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right">
                     <Button Style="{StaticResource DetailFileButton}"
                             IsEnabled="{Binding IsReferencedFileAvailable}"
                             Visibility="{Binding IsReferencedFileAvailable, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            ToolTip="Open file"
+                            ToolTip="{Binding ReferencedFileOpenToolTip}"
                             Click="OpenReferencedFile_Click">
                         <Path Data="M4,3 H9 L11,5 H14 V14 H4 Z M7,9 H12 M10,6 L13,9 L10,12"
                               Style="{StaticResource DetailFileIcon}" />
@@ -242,13 +295,19 @@
                               Style="{StaticResource DetailFileIcon}" />
                     </Button>
                     <Button Style="{StaticResource DetailButton}"
-                            Content="COPY MESSAGE"
+                            Content="COPY FORMATTED"
+                            ToolTip="Copy the readable message shown above"
+                            Click="CopyFormatted_Click" />
+                    <Button Style="{StaticResource DetailButton}"
+                            Content="COPY"
+                            ToolTip="Copy the original message"
                             Click="Copy_Click" />
                     <Button Style="{StaticResource DetailButton}"
                             Content="OPEN IN CODEX"
                             Click="OpenCodex_Click" />
                     <Button Style="{StaticResource DetailButton}"
                             Content="CLOSE"
+                            ToolTip="Close message"
                             Click="Close_Click" />
                 </StackPanel>
             </Grid>

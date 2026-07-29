@@ -39,33 +39,46 @@ public partial class MessageDetailWindow : System.Windows.Window
         _entry = _entries[_index];
         _entry.IsUnread = false;
         DataContext = _entry;
-        PreviousButton.IsEnabled = _index < _entries.Count - 1;
-        NextButton.IsEnabled = _index > 0;
+        MessageBodyViewer.Document = MessageDocumentBuilder.Build(
+            _entry.DisplayText,
+            _entry.WorkingDirectory);
+        PreviousButton.IsEnabled = MessageNavigationPolicy.CanOpenPrevious(_index, _entries.Count);
+        NextButton.IsEnabled = MessageNavigationPolicy.CanOpenNext(_index);
     }
 
     private void Previous_Click(object sender, System.Windows.RoutedEventArgs e)
     {
-        if (_index < _entries.Count - 1)
+        if (MessageNavigationPolicy.CanOpenPrevious(_index, _entries.Count))
         {
-            _index++;
+            _index = MessageNavigationPolicy.GetPreviousIndex(_index);
             ShowCurrentEntry();
         }
     }
 
     private void Next_Click(object sender, System.Windows.RoutedEventArgs e)
     {
-        if (_index > 0)
+        if (MessageNavigationPolicy.CanOpenNext(_index))
         {
-            _index--;
+            _index = MessageNavigationPolicy.GetNextIndex(_index);
             ShowCurrentEntry();
         }
     }
 
     private void Copy_Click(object sender, System.Windows.RoutedEventArgs e)
     {
+        CopyToClipboard(_entry.Text);
+    }
+
+    private void CopyFormatted_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        CopyToClipboard(_entry.DisplayText);
+    }
+
+    private static void CopyToClipboard(string text)
+    {
         try
         {
-            System.Windows.Clipboard.SetText(_entry.Text);
+            System.Windows.Clipboard.SetText(text);
         }
         catch (System.Runtime.InteropServices.COMException)
         {
