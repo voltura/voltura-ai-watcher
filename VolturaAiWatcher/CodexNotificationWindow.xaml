@@ -158,7 +158,7 @@
                                FontWeight="SemiBold"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Grid.Row="1"
-                               Text="{Binding Text}"
+                               Text="{Binding PreviewText}"
                                Foreground="#D2F4DA"
                                FontSize="11"
                                Margin="0,6,0,0"

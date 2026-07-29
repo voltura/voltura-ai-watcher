@@ -98,15 +98,13 @@ public static class CodexWindowActivator
 
     private static void RestoreAndFocus(System.IntPtr handle)
     {
-        if (IsIconic(handle))
-        {
-            ShowWindowAsync(handle, RestoreWindow);
-        }
-        else
+        if (ShouldRestoreWindow(IsIconic(handle)))
         {
             ShowWindowAsync(handle, RestoreWindow);
         }
 
         SetForegroundWindow(handle);
     }
+
+    internal static bool ShouldRestoreWindow(bool isIconic) => isIconic;
 }

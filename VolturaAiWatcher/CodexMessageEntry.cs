@@ -7,13 +7,23 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
     private bool _isUnread;
     private bool _isCleared;
     private bool _isLatestForThread;
+    private string _text = string.Empty;
+    private JsonMessagePresentation? _jsonPresentation;
 
     public required string Id { get; init; }
     public required string ThreadId { get; init; }
     public required string ProjectName { get; init; }
     public string? WorkingDirectory { get; init; }
     public required string Sender { get; init; }
-    public required string Text { get; init; }
+    public required string Text
+    {
+        get => _text;
+        init
+        {
+            _text = value;
+            _jsonPresentation = JsonMessageFormatter.TryFormat(value);
+        }
+    }
     public required System.DateTimeOffset OccurredAt { get; init; }
 
     public string ChatTitle
@@ -68,6 +78,9 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
     }
 
     public string HeaderText => $"{Sender.ToUpperInvariant()} // {ProjectName.ToUpperInvariant()} // {ChatTitle.ToUpperInvariant()}";
+    public string PreviewText => _jsonPresentation?.PreviewText ?? Text;
+    public string DisplayText => _jsonPresentation?.DetailText ?? Text;
+    public string DetailHeading => _jsonPresentation is null ? "COMPLETE CODEX MESSAGE" : "STRUCTURED CODEX MESSAGE";
     public string LocalTimeText => OccurredAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
     public string StatusLabel => CodexChatStatusPolicy.GetLabel(Status);
     public System.Windows.Media.Brush StatusBrush =>

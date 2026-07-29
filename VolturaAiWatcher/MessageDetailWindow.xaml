@@ -161,7 +161,7 @@
                          VerticalAlignment="Center"
                          Margin="0,0,8,0" />
                 <TextBlock Grid.Column="1"
-                           Text="COMPLETE CODEX MESSAGE"
+                           Text="{Binding DetailHeading}"
                            Foreground="#7CFF9A"
                            FontWeight="Bold"
                            FontSize="13" />
@@ -194,7 +194,7 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled"
                               PanningMode="VerticalOnly">
-                    <TextBlock Text="{Binding Text}"
+                    <TextBlock Text="{Binding DisplayText}"
                                Foreground="#D2F4DA"
                                FontSize="13"
                                LineHeight="19"

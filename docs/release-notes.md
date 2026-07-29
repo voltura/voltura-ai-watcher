@@ -1,3 +1,8 @@
+## v0.1.5
+
+- Keeps Codex maximized when bringing its window to the foreground.
+- Presents JSON messages as readable labeled summaries while preserving their original content when copied.
+
 ## v0.1.4
 
 - Corrected .NET framework install logic.

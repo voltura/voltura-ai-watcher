@@ -596,7 +596,7 @@
                                     </TextBlock>
                                 </Grid>
                                 <TextBlock Grid.Row="1"
-                                           Text="{Binding Text}"
+                                           Text="{Binding PreviewText}"
                                            Foreground="#D2F4DA"
                                            FontSize="11"
                                            Margin="14,6,2,0"
