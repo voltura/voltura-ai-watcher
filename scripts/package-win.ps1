@@ -8,6 +8,10 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+if ($Runtime -cne "win-x64") {
+    throw "Runtime '$Runtime' is not supported. Voltura AI Watcher installers require win-x64."
+}
+
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $projectPath = Join-Path $projectRoot "VolturaAiWatcher\VolturaAiWatcher.csproj"
 $projectXml = [xml][System.IO.File]::ReadAllText($projectPath)
@@ -112,6 +116,7 @@ function Invoke-InstallerBuild {
     }
 
     $arguments = @(
+        "/WX",
         "/DAPP_VERSION=$Version",
         "/DAPP_VERSION_QUAD=$versionQuad",
         "/DAPP_ESTIMATED_SIZE_KB=$installedSizeKb",

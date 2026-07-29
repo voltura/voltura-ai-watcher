@@ -15,8 +15,85 @@ $appWasRunning = $false
 $releaseSucceeded = $false
 $finalExecutable = Join-Path $repoRoot "VolturaAiWatcher\bin\Release\net10.0-windows\Voltura AI Watcher.exe"
 $originalLocation = Get-Location
+$totalReleaseSteps = 6
+$currentReleaseStep = 0
+$currentReleaseStepTitle = ""
+$releaseStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+$stepStopwatch = [System.Diagnostics.Stopwatch]::new()
 
 Import-Module (Join-Path $PSScriptRoot "ReleaseTools.psm1") -Force
+
+function Format-ReleaseDuration
+{
+    param([Parameter(Mandatory = $true)][System.TimeSpan]$Duration)
+
+    $totalSeconds = [Math]::Max(0, [Math]::Round($Duration.TotalSeconds))
+    $hours = [Math]::Floor($totalSeconds / 3600)
+    $minutes = [Math]::Floor(($totalSeconds % 3600) / 60)
+    $seconds = $totalSeconds % 60
+    if ($hours -gt 0)
+    {
+        return "{0}h {1:00}m {2:00}s" -f $hours, $minutes, $seconds
+    }
+    if ($minutes -gt 0)
+    {
+        return "{0}m {1:00}s" -f $minutes, $seconds
+    }
+
+    return "{0}s" -f $seconds
+}
+
+function Start-ReleaseStep
+{
+    param(
+        [Parameter(Mandatory = $true)][string]$Title,
+        [Parameter(Mandatory = $true)][string]$Detail
+    )
+
+    $script:currentReleaseStep++
+    $script:currentReleaseStepTitle = $Title
+    $script:stepStopwatch.Restart()
+    Write-Host ""
+    Write-Host ("=" * 72) -ForegroundColor Cyan
+    Write-Host "Performing step $script:currentReleaseStep out of $script:totalReleaseSteps`: $Title" -ForegroundColor Yellow
+    Write-Host "  $Detail"
+    Write-Host "  Total elapsed: $(Format-ReleaseDuration $script:releaseStopwatch.Elapsed)" -ForegroundColor DarkGray
+    Write-Host ("=" * 72) -ForegroundColor Cyan
+}
+
+function Complete-ReleaseStep
+{
+    $script:stepStopwatch.Stop()
+    Write-Host "Step $script:currentReleaseStep completed in $(Format-ReleaseDuration $script:stepStopwatch.Elapsed)." -ForegroundColor Green
+}
+
+function Write-ReleaseSuccess
+{
+    param([Parameter(Mandatory = $true)][string]$Summary)
+
+    Write-Host ""
+    Write-Host ("=" * 72) -ForegroundColor Green
+    Write-Host "GREEN = SUCCESS" -ForegroundColor Green
+    Write-Host ("=" * 72) -ForegroundColor Green
+    Write-Host $Summary
+    Write-Host "Total release time: $(Format-ReleaseDuration $script:releaseStopwatch.Elapsed)"
+}
+
+function Write-ReleaseIssue
+{
+    param([Parameter(Mandatory = $true)][System.Management.Automation.ErrorRecord]$ErrorRecord)
+
+    Write-Host ""
+    Write-Host ("=" * 72) -ForegroundColor Red
+    Write-Host "RED = ISSUE" -ForegroundColor Red
+    Write-Host ("=" * 72) -ForegroundColor Red
+    if (-not [string]::IsNullOrWhiteSpace($script:currentReleaseStepTitle))
+    {
+        Write-Host "Stopped during step $script:currentReleaseStep of $script:totalReleaseSteps`: $script:currentReleaseStepTitle"
+    }
+    Write-Host $ErrorRecord.Exception.Message -ForegroundColor Red
+    Write-Host "Total elapsed before issue: $(Format-ReleaseDuration $script:releaseStopwatch.Elapsed)"
+}
 
 function Invoke-Checked
 {
@@ -166,12 +243,16 @@ function Invoke-ReleasePackaging
 try
 {
     Set-Location $repoRoot
+    Start-ReleaseStep `
+        -Title "Validating the release environment" `
+        -Detail "Checking tools, Git state, GitHub state, the target version, and release notes."
     if ([System.Environment]::OSVersion.Platform -ne [System.PlatformID]::Win32NT)
     {
         throw "Local releases are supported only on Windows."
     }
 
     & (Join-Path $PSScriptRoot "test-release-tools.ps1")
+    & (Join-Path $PSScriptRoot "test-installer-prerequisites.ps1")
 
     foreach ($requiredCommand in @("git", "dotnet", "gh"))
     {
@@ -288,7 +369,15 @@ try
     {
         throw "Release '$targetTag' is already public."
     }
+    Write-Host "  Repository: $script:repository"
+    Write-Host "  Current project version: $currentVersion"
+    Write-Host "  Latest published release: $(if ($null -eq $latestTag) { 'none' } else { $latestTag })"
+    Write-Host "  Target release: $targetTag"
+    Complete-ReleaseStep
 
+    Start-ReleaseStep `
+        -Title "Preparing release sources" `
+        -Detail "Stopping the running watcher, setting the version, and regenerating all branding."
     $runningProcesses = @(Get-Process -Name $appProcessNames -ErrorAction SilentlyContinue)
     $appWasRunning = $runningProcesses.Count -gt 0
     if ($runningProcesses.Count -gt 0)
@@ -307,11 +396,20 @@ try
     }
 
     & (Join-Path $PSScriptRoot "generate-branding.ps1")
+    Complete-ReleaseStep
+
+    Start-ReleaseStep `
+        -Title "Testing and creating installation packages" `
+        -Detail "Running the release test suite and building both warning-free Windows installers."
     Invoke-Checked dotnet test ".\VolturaAiWatcher.Tests\VolturaAiWatcher.Tests.csproj" --configuration Release
     & dotnet build-server shutdown | Out-Host
     Start-Sleep -Milliseconds 800
     Invoke-ReleasePackaging -ReleaseVersion $targetVersion
+    Complete-ReleaseStep
 
+    Start-ReleaseStep `
+        -Title "Committing and verifying final artifacts" `
+        -Detail "Committing and pushing generated release changes, then rebuilding from the exact release commit."
     $allowedChanges = Assert-ExpectedTrackedChanges
     $gitAddArguments = @("add", "--") + @($allowedChanges)
     Invoke-Checked -Command git -Arguments $gitAddArguments
@@ -375,7 +473,14 @@ Voltura AI Watcher is free software from Voltura AB. Optional support is availab
 $(if ([string]::IsNullOrWhiteSpace($latestTag)) { "**Source:** https://github.com/$script:repository/tree/$targetTag" } else { "**Full changelog:** https://github.com/$script:repository/compare/$latestTag...$targetTag" })
 "@
     [System.IO.File]::WriteAllText($bodyPath, $body.Trim() + [System.Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
+    Write-Host "  Release commit: $releaseCommit"
+    Write-Host "  Compact installer: $([System.IO.Path]::GetFileName($smallInstaller)) ($([Math]::Round((Get-Item -LiteralPath $smallInstaller).Length / 1MB, 1)) MB)"
+    Write-Host "  Offline installer: $([System.IO.Path]::GetFileName($fullInstaller)) ($([Math]::Round((Get-Item -LiteralPath $fullInstaller).Length / 1MB, 1)) MB)"
+    Complete-ReleaseStep
 
+    Start-ReleaseStep `
+        -Title "Creating and auditing the GitHub release" `
+        -Detail "Uploading the exact installer set and verifying the draft metadata, sizes, and digests."
     $targetRelease = Get-ReleaseIfPresent -Tag $targetTag
     if ($null -eq $targetRelease)
     {
@@ -425,7 +530,11 @@ $(if ([string]::IsNullOrWhiteSpace($latestTag)) { "**Source:** https://github.co
             throw "Release asset '$($asset.name)' has invalid size or digest metadata."
         }
     }
+    Complete-ReleaseStep
 
+    Start-ReleaseStep `
+        -Title "Publishing GitHub Latest" `
+        -Detail "Publishing the audited draft, marking it Latest, and fetching the final release tag."
     Invoke-Checked gh release edit $targetTag --repo $script:repository --draft=false --latest
     $latestPublishedTag = (gh api "repos/$script:repository/releases/latest" --jq .tag_name).Trim()
     if ($LASTEXITCODE -ne 0 -or $latestPublishedTag -ne $targetTag)
@@ -433,14 +542,21 @@ $(if ([string]::IsNullOrWhiteSpace($latestTag)) { "**Source:** https://github.co
         throw "GitHub did not mark '$targetTag' as the latest release."
     }
     Invoke-Checked git fetch origin "refs/tags/$targetTag`:refs/tags/$targetTag"
+    Complete-ReleaseStep
 
     $releaseSucceeded = $true
-    Write-Host "Published https://github.com/$script:repository/releases/tag/$targetTag"
     Write-Host "$([System.IO.Path]::GetFileName($smallInstaller)) SHA-256 $smallHash"
     Write-Host "$([System.IO.Path]::GetFileName($fullInstaller)) SHA-256 $fullHash"
+    Write-ReleaseSuccess "Published as GitHub Latest: https://github.com/$script:repository/releases/tag/$targetTag"
+}
+catch
+{
+    Write-ReleaseIssue $_
+    throw
 }
 finally
 {
+    $releaseStopwatch.Stop()
     Set-Location $originalLocation
     if (($releaseSucceeded -or $appWasRunning) -and (Test-Path -LiteralPath $finalExecutable -PathType Leaf))
     {

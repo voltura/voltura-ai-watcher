@@ -1,3 +1,7 @@
+## v0.1.6
+
+- Makes the compact installer verify and install the required Microsoft .NET runtime more reliably, including clear restart and failure handling.
+
 ## v0.1.5
 
 - Keeps Codex maximized when bringing its window to the foreground.

@@ -11,6 +11,8 @@ $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $appProject = Join-Path $projectRoot "VolturaAiWatcher\VolturaAiWatcher.csproj"
 $testProject = Join-Path $projectRoot "VolturaAiWatcher.Tests\VolturaAiWatcher.Tests.csproj"
 
+& (Join-Path $PSScriptRoot "test-installer-prerequisites.ps1")
+
 & dotnet build $appProject -c $Configuration
 if ($LASTEXITCODE -ne 0) {
     throw "Application build failed with exit code $LASTEXITCODE."
