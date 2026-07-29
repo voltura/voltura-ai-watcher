@@ -52,7 +52,7 @@ End-user changes are documented in `docs\release-notes.md`. Releases are built
 and published locally without relying on GitHub Actions:
 
 ```powershell
-.\scripts\release-local.ps1
+.\scripts\release-full.ps1
 ```
 
 See [the local release guide](docs/release.md) for prerequisites and recovery

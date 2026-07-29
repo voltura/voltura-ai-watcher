@@ -45,7 +45,7 @@
 - `docs/release-notes.md` is mandatory for user-visible changes. Keep newest versions first under one `## v<version>` heading with brief, non-technical bullets users can observe.
 - Do not put tests, refactors, build plumbing, workflow changes, or internal implementation details in end-user release notes.
 - The local release must fail before changing the version if the target release-note section is missing, duplicated, or empty.
-- `scripts/release-local.ps1` is the authoritative one-command release path. It validates, builds, tests, packages, commits any release-generated changes, pushes, audits a draft release, and publishes it as Latest.
+- `scripts/release-full.ps1` is the authoritative one-command release path. Its parameterless default bumps one odometer version; an explicit version is an optional override. It validates, regenerates branding, builds, tests, packages, commits any release-generated changes, pushes, audits a draft release, and publishes it as Latest.
 - Releases must not rely on GitHub Actions. `.github/workflows/release.yml` is preserved only for possible future use, has no push trigger, and must remain manually disabled for local releases.
 
 ## Verification

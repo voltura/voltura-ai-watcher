@@ -20,16 +20,18 @@ The release command refuses to change the project version if the target section 
 ## One-command release
 
 ```powershell
-.\scripts\release-local.ps1
+.\scripts\release-full.ps1
 ```
 
-The default command advances the existing odometer version, for example `0.1.9` to `0.2.0`. An explicit stable version is also supported:
+With no parameters, the command advances the existing odometer version by one step, for example `0.1.9` to `0.2.0`. Before running it, keep the local Git worktree clean and add one non-empty `## v<next-version>` section to `docs/release-notes.md`.
+
+An explicit stable version remains available as an exceptional override:
 
 ```powershell
-.\scripts\release-local.ps1 -Version 0.2.0
+.\scripts\release-full.ps1 -Version 0.2.0
 ```
 
-The command validates its environment, regenerates all branding, runs release-tool and .NET tests, builds both installers, commits and pushes the version, rebuilds from the final commit, audits a draft release, and publishes it as Latest. The first release uses the current project version; later releases advance the odometer version. A matching pending version or draft is resumed automatically after an interrupted attempt.
+The command validates its environment and release notes before changing the project version, regenerates all branding, runs release-tool and .NET tests, builds both installers, commits and pushes the version, rebuilds from the final commit, audits a draft release, and publishes it as Latest. A matching pending version or draft is resumed automatically after an interrupted attempt.
 
 Installer outputs remain under `artifacts\publish`:
 
