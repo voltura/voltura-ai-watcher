@@ -4,9 +4,9 @@
         xmlns:local="clr-namespace:VolturaAiWatcher"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         Title="Voltura AI Watcher"
-        Width="392"
+        Width="420"
         Height="650"
-        MinWidth="330"
+        MinWidth="358"
         MinHeight="360"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -19,7 +19,8 @@
         Closing="Window_Closing"
         MouseLeftButtonDown="Window_MouseLeftButtonDown">
     <shell:WindowChrome.WindowChrome>
-        <shell:WindowChrome CaptionHeight="0"
+        <shell:WindowChrome x:Name="MainWindowChrome"
+                            CaptionHeight="0"
                             ResizeBorderThickness="7"
                             CornerRadius="0"
                             GlassFrameThickness="0"
@@ -174,6 +175,56 @@
             <Setter Property="Height" Value="14" />
         </Style>
 
+        <Style x:Key="SideTuckButton" TargetType="Button">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="64" />
+            <Setter Property="Padding" Value="5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Foreground" Value="#7CFF9A" />
+            <Setter Property="Background" Value="#F20A140E" />
+            <Setter Property="BorderBrush" Value="#A85CD77A" />
+            <Setter Property="ToolTipService.InitialShowDelay" Value="60" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid x:Name="Shell">
+                            <Path x:Name="TabFill"
+                                  Panel.ZIndex="1"
+                                  Data="M29,0 L29,64 L7,55.5 Q0.5,53 0.5,46 L0.5,18 Q0.5,11 7,8.5 Z"
+                                  Fill="{TemplateBinding Background}"
+                                  Stretch="None" />
+                            <Path x:Name="TabOutline"
+                                  Panel.ZIndex="2"
+                                  Data="M27.5,0.5 L7,8.5 Q0.5,11 0.5,18 L0.5,46 Q0.5,53 7,55.5 L27.5,63.5"
+                                  Fill="Transparent"
+                                  Stroke="{TemplateBinding BorderBrush}"
+                                  StrokeThickness="1"
+                                  StrokeLineJoin="Round"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  Stretch="None" />
+                            <ContentPresenter Panel.ZIndex="3"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabFill" Property="Fill" Value="#FF112419" />
+                                <Setter TargetName="TabOutline" Property="Stroke" Value="#FF7CFF9A" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Shell" Property="Opacity" Value="0.6" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Shell" Property="Opacity" Value="0.65" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="CyberScrollThumb" TargetType="Thumb">
             <Setter Property="MinHeight" Value="34" />
             <Setter Property="Cursor" Value="Hand" />
@@ -280,12 +331,40 @@
         </Style>
     </Window.Resources>
 
-    <Border x:Name="OuterShell"
-            Background="#FF070C09"
-            BorderBrush="#A85CD77A"
-            BorderThickness="1"
-            CornerRadius="12"
-            Padding="1">
+    <Grid Background="Transparent">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="28" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Button x:Name="SideTuckButton"
+                Grid.Column="0"
+                VerticalAlignment="Center"
+                Panel.ZIndex="2"
+                Style="{StaticResource SideTuckButton}"
+                Click="SideTuckButton_Click"
+                ToolTip="Tuck to screen edge"
+                AutomationProperties.Name="Tuck to screen edge">
+            <Path x:Name="SideTuckChevron"
+                  Data="M4,3 L10,10 L4,17 M10,3 L16,10 L10,17"
+                  Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                  StrokeThickness="1.7"
+                  StrokeStartLineCap="Round"
+                  StrokeEndLineCap="Round"
+                  StrokeLineJoin="Round"
+                  Width="16"
+                  Height="20"
+                  Stretch="Uniform"
+                  RenderTransformOrigin="0.5,0.5" />
+        </Button>
+
+        <Border x:Name="OuterShell"
+                Grid.Column="1"
+                Background="#FF070C09"
+                BorderBrush="#A85CD77A"
+                BorderThickness="1"
+                CornerRadius="12"
+                Padding="1">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -637,5 +716,15 @@
                            TextTrimming="CharacterEllipsis" />
             </Border>
         </Grid>
-    </Border>
+        </Border>
+
+        <Border Grid.Column="1"
+                Width="2"
+                Height="62"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Panel.ZIndex="1"
+                IsHitTestVisible="False"
+                Background="{Binding ElementName=SideTuckButton, Path=Background}" />
+    </Grid>
 </Window>

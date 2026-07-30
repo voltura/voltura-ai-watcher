@@ -1,3 +1,7 @@
+## v0.1.8
+
+- Adds a screen-edge tab that smoothly tucks the message panel aside while keeping new-activity notifications available.
+
 ## v0.1.7
 
 - Shows themed tooltips quickly above enabled icons whenever screen space allows, while disabled actions stay quiet.

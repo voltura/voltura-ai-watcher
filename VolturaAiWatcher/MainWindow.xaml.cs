@@ -38,6 +38,8 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
     private bool _updatingStartupMenu;
     private bool _allowClose;
     private bool _disposed;
+    private WindowTuckState _tuckState = WindowTuckState.Expanded;
+    private string? _tuckMonitorDeviceName;
     private string _footerStatus = "Initializing Codex monitor...";
     private string _visibleCountText = "0 MESSAGES";
     private string _activeChatFilterText = "ALL CHATS";
@@ -71,6 +73,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
 
         DataContext = this;
         UpdateSoundIcon();
+        UpdateSideTuckVisual();
         CreateTrayIcon();
         SourceInitialized += (_, _) => ApplyInitialPlacement();
         Activated += (_, _) => EnforceTopmost();
@@ -124,6 +127,9 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
     [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
     private static extern bool GetWindowRect(System.IntPtr windowHandle, out NativeRect rect);
 
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(System.IntPtr windowHandle);
+
     [System.Runtime.InteropServices.DllImport(
         "winmm.dll",
         EntryPoint = "PlaySoundW",
@@ -146,7 +152,17 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
 
     public void ShowFromTray()
     {
+        _ = ShowFromTrayAsync();
+    }
+
+    private async System.Threading.Tasks.Task ShowFromTrayAsync()
+    {
         _notificationWindow.Dismiss();
+
+        if (_tuckState is WindowTuckState.Tucking or WindowTuckState.Restoring)
+        {
+            return;
+        }
 
         if (!IsVisible)
         {
@@ -158,7 +174,15 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
             WindowState = System.Windows.WindowState.Normal;
         }
 
-        ApplyInitialPlacement();
+        if (_tuckState == WindowTuckState.Tucked)
+        {
+            await RestoreFromScreenEdgeAsync();
+        }
+        else
+        {
+            ApplyInitialPlacement();
+        }
+
         Activate();
         EnforceTopmost();
     }
@@ -237,7 +261,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
             RefreshView();
             FooterStatus = $"{entry.Sender} activity received from {entry.ChatTitle}.";
 
-            if (!historical && (!IsVisible || WindowState == System.Windows.WindowState.Minimized))
+            if (!historical && IsEffectivelyMinimized())
             {
                 ShowNotification(entry);
             }
@@ -288,7 +312,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
 
             if (!historical &&
                 needsAttention &&
-                (!IsVisible || WindowState == System.Windows.WindowState.Minimized))
+                IsEffectivelyMinimized())
             {
                 ShowNotification(latest);
             }
@@ -600,6 +624,18 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
 
     private void Hide_Click(object sender, System.Windows.RoutedEventArgs e) => Hide();
 
+    private async void SideTuckButton_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (ScreenEdgeTuckPolicy.CanStartTuck(_tuckState))
+        {
+            await TuckToScreenEdgeAsync();
+        }
+        else if (ScreenEdgeTuckPolicy.CanStartRestore(_tuckState))
+        {
+            await ShowFromTrayAsync();
+        }
+    }
+
     private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         if (_allowClose)
@@ -679,6 +715,160 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
             SetWindowPosNoSize | SetWindowPosNoActivate);
         _initialPlacementApplied = true;
     }
+
+    private bool IsEffectivelyMinimized() =>
+        ScreenEdgeTuckPolicy.IsMinimizedEquivalent(
+            IsVisible,
+            WindowState == System.Windows.WindowState.Minimized,
+            _tuckState);
+
+    private async System.Threading.Tasks.Task TuckToScreenEdgeAsync()
+    {
+        if (!ScreenEdgeTuckPolicy.CanStartTuck(_tuckState))
+        {
+            return;
+        }
+
+        var handle = new System.Windows.Interop.WindowInteropHelper(this).EnsureHandle();
+        if (!GetWindowRect(handle, out var rect))
+        {
+            return;
+        }
+
+        var screen = System.Windows.Forms.Screen.FromHandle(handle);
+        _tuckMonitorDeviceName = screen.DeviceName;
+        var workArea = ToNativeBounds(screen.WorkingArea);
+        var windowWidth = rect.Right - rect.Left;
+        var windowHeight = rect.Bottom - rect.Top;
+        var dpiScale = System.Math.Max(1, GetDpiForWindow(handle)) / 96.0;
+        var target = ScreenEdgeTuckPolicy.GetTuckedPosition(
+            workArea,
+            windowHeight,
+            ScreenEdgeTuckPolicy.GetTabWidthPixels(dpiScale));
+
+        _notificationWindow.Dismiss();
+        _tuckState = WindowTuckState.Tucking;
+        UpdateSideTuckVisual();
+        await AnimateWindowPositionAsync(
+            handle,
+            new NativePoint(rect.Left, rect.Top),
+            target);
+
+        OuterShell.Opacity = 0;
+        OuterShell.IsHitTestVisible = false;
+        _tuckState = WindowTuckState.Tucked;
+        UpdateSideTuckVisual();
+    }
+
+    private async System.Threading.Tasks.Task RestoreFromScreenEdgeAsync()
+    {
+        if (!ScreenEdgeTuckPolicy.CanStartRestore(_tuckState))
+        {
+            return;
+        }
+
+        var handle = new System.Windows.Interop.WindowInteropHelper(this).EnsureHandle();
+        if (!GetWindowRect(handle, out var rect))
+        {
+            return;
+        }
+
+        var monitors = System.Windows.Forms.Screen.AllScreens
+            .Select(screen => new MonitorWorkArea(
+                screen.DeviceName,
+                ToNativeBounds(screen.WorkingArea),
+                screen.Primary))
+            .ToArray();
+        var selectedMonitor = ScreenEdgeTuckPolicy.SelectMonitor(
+            _tuckMonitorDeviceName,
+            monitors,
+            new NativeBounds(
+                rect.Left,
+                rect.Top,
+                rect.Right - rect.Left,
+                rect.Bottom - rect.Top));
+        _tuckMonitorDeviceName = selectedMonitor.DeviceName;
+        var target = ScreenEdgeTuckPolicy.GetExpandedPosition(
+            selectedMonitor.Bounds,
+            rect.Right - rect.Left,
+            rect.Bottom - rect.Top);
+
+        _tuckState = WindowTuckState.Restoring;
+        OuterShell.Opacity = 1;
+        OuterShell.IsHitTestVisible = true;
+        UpdateSideTuckVisual();
+        await AnimateWindowPositionAsync(
+            handle,
+            new NativePoint(rect.Left, rect.Top),
+            target);
+
+        _tuckState = WindowTuckState.Expanded;
+        UpdateSideTuckVisual();
+    }
+
+    private System.Threading.Tasks.Task AnimateWindowPositionAsync(
+        System.IntPtr handle,
+        NativePoint start,
+        NativePoint target)
+    {
+        var completion = new System.Threading.Tasks.TaskCompletionSource(
+            System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var timer = new System.Windows.Threading.DispatcherTimer(
+            System.Windows.Threading.DispatcherPriority.Render,
+            Dispatcher)
+        {
+            Interval = System.TimeSpan.FromMilliseconds(15)
+        };
+
+        timer.Tick += Tick;
+        timer.Start();
+        return completion.Task;
+
+        void Tick(object? sender, System.EventArgs args)
+        {
+            var progress = stopwatch.Elapsed.TotalMilliseconds /
+                ScreenEdgeTuckPolicy.AnimationDurationMilliseconds;
+            var eased = ScreenEdgeTuckPolicy.EaseInOutCubic(progress);
+            var x = (int)System.Math.Round(start.X + ((target.X - start.X) * eased));
+            var y = (int)System.Math.Round(start.Y + ((target.Y - start.Y) * eased));
+            SetWindowPos(
+                handle,
+                new System.IntPtr(-1),
+                x,
+                y,
+                0,
+                0,
+                SetWindowPosNoSize | SetWindowPosNoActivate);
+
+            if (progress < 1)
+            {
+                return;
+            }
+
+            timer.Stop();
+            timer.Tick -= Tick;
+            completion.TrySetResult();
+        }
+    }
+
+    private void UpdateSideTuckVisual()
+    {
+        var restoreVisual = _tuckState is WindowTuckState.Tucked or WindowTuckState.Restoring;
+        var label = restoreVisual ? "Restore window" : "Tuck to screen edge";
+        SideTuckButton.ToolTip = label;
+        SideTuckButton.SetValue(System.Windows.Automation.AutomationProperties.NameProperty, label);
+        SideTuckButton.IsEnabled = _tuckState is WindowTuckState.Expanded or WindowTuckState.Tucked;
+        MainWindowChrome.ResizeBorderThickness = ScreenEdgeTuckPolicy.ShouldAllowResize(_tuckState)
+            ? new System.Windows.Thickness(7)
+            : new System.Windows.Thickness(0);
+        SideTuckChevron.RenderTransform = new System.Windows.Media.ScaleTransform(
+            restoreVisual ? -1 : 1,
+            1);
+    }
+
+    private static NativeBounds ToNativeBounds(System.Drawing.Rectangle rectangle) =>
+        new(rectangle.Left, rectangle.Top, rectangle.Width, rectangle.Height);
 
     private void EnforceTopmost()
     {
@@ -846,7 +1036,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
             var dialog = new NotificationDurationDialog(
                 _settings.NotificationDurationSeconds,
                 System.Windows.Forms.Cursor.Position);
-            if (IsVisible && WindowState is not System.Windows.WindowState.Minimized)
+            if (!IsEffectivelyMinimized())
             {
                 dialog.Owner = this;
             }
