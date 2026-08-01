@@ -308,8 +308,11 @@
             </Border>
 
             <Grid Grid.Row="3" Margin="0,12,0,0">
-                <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Left">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal">
                     <Button x:Name="PreviousButton"
                             Style="{StaticResource DetailButton}"
                             Margin="0"
@@ -321,9 +324,6 @@
                             Content="NEXT →"
                             ToolTip="Show the next, newer visible message"
                             Click="Next_Click" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Right">
                     <Button Style="{StaticResource DetailFileButton}"
                             IsEnabled="{Binding IsReferencedFileAvailable}"
                             Visibility="{Binding IsReferencedFileAvailable, Converter={StaticResource BooleanToVisibilityConverter}}"
@@ -348,6 +348,10 @@
                         <Path Data="M4,3 H12 V5 H14 V15 H6 V13 H4 Z M7,7 H11 M7,10 H11 M2,6 H5 V12 H2 Z"
                               Style="{StaticResource DetailFileIcon}" />
                     </Button>
+                </StackPanel>
+                <StackPanel Grid.Row="1"
+                            Margin="0,6,0,0"
+                            Orientation="Horizontal">
                     <Button Style="{StaticResource DetailButton}"
                             Content="COPY FORMATTED"
                             ToolTip="Copy the readable message shown above"

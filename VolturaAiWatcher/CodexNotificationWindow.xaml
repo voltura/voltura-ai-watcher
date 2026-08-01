@@ -16,6 +16,7 @@
         FontFamily="Bahnschrift SemiCondensed"
         Closing="Window_Closing">
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <Style TargetType="ToolTip">
             <Setter Property="OverridesDefaultStyle" Value="True" />
             <Setter Property="Background" Value="#F21A2A1E" />
@@ -89,6 +90,74 @@
             <Setter Property="Width" Value="13" />
             <Setter Property="Height" Value="13" />
         </Style>
+        <Style TargetType="ContextMenu">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HasDropShadow" Value="False" />
+            <Setter Property="ItemsPanel">
+                <Setter.Value>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <ItemsPresenter />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="MenuItem">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="ToolTipService.InitialShowDelay" Value="60" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Background" Value="#FF0A0F0C" />
+            <Setter Property="BorderBrush" Value="#704BFF7A" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="MinWidth" Value="34" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="MenuItemShell"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter ContentSource="Icon" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="MenuItemShell" Property="Background" Value="#FF102619" />
+                                <Setter TargetName="MenuItemShell" Property="BorderBrush" Value="#A8FFB9" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="MenuItemShell" Property="Opacity" Value="0.34" />
+                                <Setter TargetName="MenuItemShell" Property="BorderBrush" Value="#403B804B" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ContextActionIcon" TargetType="Path">
+            <Setter Property="Stroke" Value="#A8FFB9" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+            <Setter Property="Fill" Value="Transparent" />
+            <Setter Property="StrokeStartLineCap" Value="Round" />
+            <Setter Property="StrokeEndLineCap" Value="Round" />
+            <Setter Property="StrokeLineJoin" Value="Round" />
+            <Setter Property="Stretch" Value="Uniform" />
+            <Setter Property="Width" Value="18" />
+            <Setter Property="Height" Value="18" />
+        </Style>
     </Window.Resources>
     <Border x:Name="PanelShell"
             Background="#FA070C09"
@@ -148,6 +217,42 @@
                     ToolTip="{Binding UsageToolTip}"
                     Cursor="Hand"
                     PreviewMouseLeftButtonUp="Message_Click">
+                <Border.ContextMenu>
+                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                        <MenuItem Click="ShowMessageDetails_Click"
+                                  ToolTip="Show message details">
+                            <MenuItem.Icon>
+                                <Path Data="M3,3 H13 V13 H3 Z M5,6 H11 M5,9 H10"
+                                      Style="{StaticResource ContextActionIcon}" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Click="OpenMessageInCodex_Click"
+                                  ToolTip="Open in Codex">
+                            <MenuItem.Icon>
+                                <Path Data="M3,8 L8,3 H14 V14 H3 Z M8,3 V8 H14 M6,11 H11"
+                                      Style="{StaticResource ContextActionIcon}" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Click="OpenReferencedFile_Click"
+                                  IsEnabled="{Binding IsReferencedFileAvailable}"
+                                  Visibility="{Binding IsReferencedFileAvailable, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                  ToolTip="{Binding ReferencedFileOpenToolTip}">
+                            <MenuItem.Icon>
+                                <Path Data="M4,3 H9 L11,5 H14 V14 H4 Z M7,9 H12 M10,6 L13,9 L10,12"
+                                      Style="{StaticResource ContextActionIcon}" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Click="CopyReferencedFilePath_Click"
+                                  IsEnabled="{Binding IsReferencedFileAvailable}"
+                                  Visibility="{Binding IsReferencedFileAvailable, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                  ToolTip="Copy referenced file path">
+                            <MenuItem.Icon>
+                                <Path Data="M4,3 H12 V5 H14 V15 H6 V13 H4 Z M7,7 H11 M7,10 H11 M2,6 H5 V12 H2 Z"
+                                      Style="{StaticResource ContextActionIcon}" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                    </ContextMenu>
+                </Border.ContextMenu>
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />

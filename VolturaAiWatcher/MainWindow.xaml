@@ -30,6 +30,7 @@
     <Window.Resources>
         <SolidColorBrush x:Key="NeonGreen" Color="#7CFF9A" />
         <SolidColorBrush x:Key="MutedGreen" Color="#6EA37A" />
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
 
         <Style TargetType="ToolTip">
             <Setter Property="OverridesDefaultStyle" Value="True" />
@@ -591,8 +592,7 @@
                       Style="{StaticResource CyberListView}"
                       Foreground="#D2F4DA"
                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                      ScrollViewer.VerticalScrollBarVisibility="Auto"
-                      SelectionChanged="MessagesList_SelectionChanged">
+                      ScrollViewer.VerticalScrollBarVisibility="Auto">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Border x:Name="RowShell"
@@ -603,12 +603,30 @@
                                 Background="#FF0B1710"
                                 BorderBrush="#6254B96B"
                                 BorderThickness="1"
-                                CornerRadius="7">
+                                CornerRadius="7"
+                                MouseLeftButtonUp="MessageRow_Click">
                             <Border.ContextMenu>
                                 <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                                    <MenuItem Click="ShowMessageDetails_Click"
+                                              Tag="{Binding}"
+                                              ToolTip="Show message details">
+                                        <MenuItem.Icon>
+                                            <Path Data="M3,3 H13 V13 H3 Z M5,6 H11 M5,9 H10"
+                                                  Style="{StaticResource ContextActionIcon}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Click="OpenMessageInCodex_Click"
+                                              Tag="{Binding}"
+                                              ToolTip="Open in Codex">
+                                        <MenuItem.Icon>
+                                            <Path Data="M3,8 L8,3 H14 V14 H3 Z M8,3 V8 H14 M6,11 H11"
+                                                  Style="{StaticResource ContextActionIcon}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
                                     <MenuItem Click="OpenReferencedFile_Click"
                                               Tag="{Binding}"
                                               IsEnabled="{Binding IsReferencedFileAvailable}"
+                                              Visibility="{Binding IsReferencedFileAvailable, Converter={StaticResource BooleanToVisibilityConverter}}"
                                               ToolTip="{Binding ReferencedFileOpenToolTip}">
                                         <MenuItem.Icon>
                                             <Path Data="M4,3 H9 L11,5 H14 V14 H4 Z M7,9 H12 M10,6 L13,9 L10,12"
@@ -618,6 +636,7 @@
                                     <MenuItem Click="CopyReferencedFilePath_Click"
                                               Tag="{Binding}"
                                               IsEnabled="{Binding IsReferencedFileAvailable}"
+                                              Visibility="{Binding IsReferencedFileAvailable, Converter={StaticResource BooleanToVisibilityConverter}}"
                                               ToolTip="Copy referenced file path">
                                         <MenuItem.Icon>
                                             <Path Data="M4,3 H12 V5 H14 V15 H6 V13 H4 Z M7,7 H11 M7,10 H11 M2,6 H5 V12 H2 Z"

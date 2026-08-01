@@ -4,15 +4,23 @@ public partial class CodexNotificationWindow : System.Windows.Window, System.IDi
 {
     private const uint SetWindowPosNoActivate = 0x0010;
     private const uint SetWindowPosNoSize = 0x0001;
+    private readonly System.Action<CodexMessageEntry> _showMessageDetails;
     private readonly System.Func<CodexMessageEntry, System.Threading.Tasks.Task> _openMessage;
+    private readonly System.Func<CodexMessageEntry, System.Threading.Tasks.Task> _openMessageFromContextMenu;
     private readonly System.Windows.Threading.DispatcherTimer _dismissTimer;
     private int _durationSeconds = NotificationDurationPolicy.DefaultSeconds;
+    private MinimizedMessageClickAction _clickAction = MinimizedMessageClickActionPolicy.Default;
     private bool _allowClose;
 
-    public CodexNotificationWindow(System.Func<CodexMessageEntry, System.Threading.Tasks.Task> openMessage)
+    public CodexNotificationWindow(
+        System.Action<CodexMessageEntry> showMessageDetails,
+        System.Func<CodexMessageEntry, System.Threading.Tasks.Task> openMessage,
+        System.Func<CodexMessageEntry, System.Threading.Tasks.Task> openMessageFromContextMenu)
     {
         InitializeComponent();
+        _showMessageDetails = showMessageDetails;
         _openMessage = openMessage;
+        _openMessageFromContextMenu = openMessageFromContextMenu;
         _dismissTimer = new System.Windows.Threading.DispatcherTimer();
         _dismissTimer.Tick += (_, _) => Dismiss();
         SourceInitialized += (_, _) => PositionAboveTaskbar();
@@ -42,9 +50,13 @@ public partial class CodexNotificationWindow : System.Windows.Window, System.IDi
     [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
     private static extern bool GetWindowRect(System.IntPtr windowHandle, out NativeRect rect);
 
-    public void ShowMessage(CodexMessageEntry entry, int durationSeconds)
+    public void ShowMessage(
+        CodexMessageEntry entry,
+        int durationSeconds,
+        MinimizedMessageClickAction clickAction)
     {
         _durationSeconds = NotificationDurationPolicy.NormalizePersisted(durationSeconds);
+        _clickAction = MinimizedMessageClickActionPolicy.NormalizePersisted(clickAction);
         DataContext = entry;
         _dismissTimer.Stop();
         if (!IsVisible)
@@ -141,7 +153,32 @@ public partial class CodexNotificationWindow : System.Windows.Window, System.IDi
         {
             e.Handled = true;
             Dismiss();
-            await _openMessage(entry);
+            if (_clickAction == MinimizedMessageClickAction.OpenInCodex)
+            {
+                await _openMessage(entry);
+            }
+            else
+            {
+                _showMessageDetails(entry);
+            }
+        }
+    }
+
+    private void ShowMessageDetails_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (DataContext is CodexMessageEntry entry)
+        {
+            Dismiss();
+            _showMessageDetails(entry);
+        }
+    }
+
+    private async void OpenMessageInCodex_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (DataContext is CodexMessageEntry entry)
+        {
+            Dismiss();
+            await _openMessageFromContextMenu(entry);
         }
     }
 

@@ -1,5 +1,6 @@
 ## v0.2.0
 
+- Adds configurable minimized-message clicks with quick actions for showing message details or opening the related Codex chat, tucking the Watcher when opened from a context menu.
 - Opens a separate repository-scoped Codex chat with the uncommitted-changes review action ready to start.
 - Shows the active Git branch and repository change statistics in message details, with a reviewed commit-and-push action.
 - Uses a brighter background for tooltips so their content stands apart from the watcher window.

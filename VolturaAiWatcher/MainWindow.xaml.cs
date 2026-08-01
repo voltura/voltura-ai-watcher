@@ -56,6 +56,8 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         _settings = LoadSettings();
         _settings.NotificationDurationSeconds = NotificationDurationPolicy.NormalizePersisted(
             _settings.NotificationDurationSeconds);
+        _settings.MinimizedMessageClickAction = MinimizedMessageClickActionPolicy.NormalizePersisted(
+            _settings.MinimizedMessageClickAction);
         _sparkSoundPath = System.IO.Path.Combine(
             System.AppContext.BaseDirectory,
             "Assets",
@@ -75,7 +77,10 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         _monitor.TitleObserved += Monitor_TitleObserved;
         _monitor.UnreadThreadsChanged += Monitor_UnreadThreadsChanged;
         _monitor.MonitorWarning += Monitor_MonitorWarning;
-        _notificationWindow = new CodexNotificationWindow(OpenMessageAsync);
+        _notificationWindow = new CodexNotificationWindow(
+            ShowMessageDetails,
+            OpenMessageAsync,
+            OpenMessageFromContextMenuAsync);
         _usageAgeTimer = new System.Windows.Threading.DispatcherTimer
         {
             Interval = System.TimeSpan.FromSeconds(30)
@@ -507,34 +512,72 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
                 : "Codex could not be brought to the foreground.");
     }
 
-    private void MessagesList_SelectionChanged(
-        object sender,
-        System.Windows.Controls.SelectionChangedEventArgs e)
+    private async System.Threading.Tasks.Task OpenMessageFromContextMenuAsync(CodexMessageEntry entry)
     {
-        if (e.AddedItems.Count == 0 ||
-            e.AddedItems[0] is not CodexMessageEntry entry)
+        await OpenMessageAsync(entry);
+        if (IsVisible &&
+            WindowState != System.Windows.WindowState.Minimized &&
+            ScreenEdgeTuckPolicy.CanStartTuck(_tuckState))
         {
-            return;
+            await TuckToScreenEdgeAsync();
         }
+    }
 
+    private void ShowMessageDetails(CodexMessageEntry entry)
+    {
         entry.IsUnread = false;
         _unreadThreads.Remove(entry.ThreadId);
         var visibleEntries = _messagesView
             .Cast<CodexMessageEntry>()
             .OrderByDescending(message => message.OccurredAt)
             .ToArray();
-        var detail = new MessageDetailWindow(entry, visibleEntries, OpenMessageAsync, _gitRepositoryService)
+        var detail = new MessageDetailWindow(entry, visibleEntries, OpenMessageAsync, _gitRepositoryService);
+        if (!IsEffectivelyMinimized())
         {
-            Owner = this
-        };
-        MessagesList.SelectedItem = null;
+            detail.Owner = this;
+        }
+
         detail.ShowDialog();
+    }
+
+    private void MessageRow_Click(
+        object sender,
+        System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != System.Windows.Input.MouseButton.Left ||
+            e.ClickCount != 1 ||
+            sender is not System.Windows.FrameworkElement { Tag: CodexMessageEntry entry })
+        {
+            return;
+        }
+
+        e.Handled = true;
+        MessagesList.SelectedItem = null;
+        ShowMessageDetails(entry);
     }
 
     private static CodexMessageEntry? GetContextMenuEntry(object sender) =>
         sender is System.Windows.Controls.MenuItem { Tag: CodexMessageEntry entry }
             ? entry
             : null;
+
+    private void ShowMessageDetails_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (GetContextMenuEntry(sender) is { } entry)
+        {
+            ShowMessageDetails(entry);
+        }
+    }
+
+    private async void OpenMessageInCodex_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (GetContextMenuEntry(sender) is { } entry)
+        {
+            await OpenMessageFromContextMenuAsync(entry);
+        }
+    }
 
     private void OpenReferencedFile_Click(object sender, System.Windows.RoutedEventArgs e)
     {
@@ -986,7 +1029,10 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
             return;
         }
 
-        _notificationWindow.ShowMessage(entry, _settings.NotificationDurationSeconds);
+        _notificationWindow.ShowMessage(
+            entry,
+            _settings.NotificationDurationSeconds,
+            _settings.MinimizedMessageClickAction);
     }
 
     private System.Windows.Forms.ContextMenuStrip CreateTrayMenu()
@@ -1120,6 +1166,33 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
             }
         });
         notificationDuration.DropDownItems.Add(customDuration);
+        var minimizedMessageClickAction = CreateMenuItem("Minimized message click");
+        ApplyDropDownTheme(minimizedMessageClickAction.DropDown);
+        var showMessageDetails = CreateMenuItem("Show message details", checkOnClick: true);
+        var openMessageInCodex = CreateMenuItem("Open in Codex", checkOnClick: true);
+
+        void UpdateMinimizedMessageClickChecks()
+        {
+            showMessageDetails.Checked = _settings.MinimizedMessageClickAction ==
+                MinimizedMessageClickAction.ShowMessageDetails;
+            openMessageInCodex.Checked = _settings.MinimizedMessageClickAction ==
+                MinimizedMessageClickAction.OpenInCodex;
+        }
+
+        showMessageDetails.Click += (_, _) => Dispatcher.Invoke(() =>
+        {
+            _settings.MinimizedMessageClickAction = MinimizedMessageClickAction.ShowMessageDetails;
+            UpdateMinimizedMessageClickChecks();
+            SaveSettings();
+        });
+        openMessageInCodex.Click += (_, _) => Dispatcher.Invoke(() =>
+        {
+            _settings.MinimizedMessageClickAction = MinimizedMessageClickAction.OpenInCodex;
+            UpdateMinimizedMessageClickChecks();
+            SaveSettings();
+        });
+        minimizedMessageClickAction.DropDownItems.AddRange([showMessageDetails, openMessageInCodex]);
+        UpdateMinimizedMessageClickChecks();
         UpdateDurationChecks();
         settings.DropDownItems.AddRange(
             [
@@ -1128,6 +1201,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
                 _playSoundMenuItem,
                 codexResponsesOnly,
                 notificationDuration,
+                minimizedMessageClickAction,
                 _showClearedMenuItem
             ]);
 
