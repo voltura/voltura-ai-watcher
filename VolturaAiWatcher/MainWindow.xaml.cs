@@ -94,6 +94,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         CreateTrayIcon();
         SourceInitialized += (_, _) => ApplyInitialPlacement();
         Activated += (_, _) => EnforceTopmost();
+        Microsoft.Win32.SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
     }
 
     public string CodexHome => _monitor.CodexHome;
@@ -834,16 +835,11 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
             return;
         }
 
-        var screen = System.Windows.Forms.Screen.FromHandle(handle);
-        _tuckMonitorDeviceName = screen.DeviceName;
-        var workArea = ToNativeBounds(screen.WorkingArea);
         var windowWidth = rect.Right - rect.Left;
         var windowHeight = rect.Bottom - rect.Top;
-        var dpiScale = System.Math.Max(1, GetDpiForWindow(handle)) / 96.0;
-        var target = ScreenEdgeTuckPolicy.GetTuckedPosition(
-            workArea,
-            windowHeight,
-            ScreenEdgeTuckPolicy.GetTabWidthPixels(dpiScale));
+        var selectedMonitor = SelectMonitorForWindow(rect);
+        _tuckMonitorDeviceName = selectedMonitor.DeviceName;
+        var target = GetTuckedPosition(selectedMonitor.Bounds, handle, windowHeight);
 
         _notificationWindow.Dismiss();
         _tuckState = WindowTuckState.Tucking;
@@ -872,20 +868,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
             return;
         }
 
-        var monitors = System.Windows.Forms.Screen.AllScreens
-            .Select(screen => new MonitorWorkArea(
-                screen.DeviceName,
-                ToNativeBounds(screen.WorkingArea),
-                screen.Primary))
-            .ToArray();
-        var selectedMonitor = ScreenEdgeTuckPolicy.SelectMonitor(
-            _tuckMonitorDeviceName,
-            monitors,
-            new NativeBounds(
-                rect.Left,
-                rect.Top,
-                rect.Right - rect.Left,
-                rect.Bottom - rect.Top));
+        var selectedMonitor = SelectMonitorForWindow(rect);
         _tuckMonitorDeviceName = selectedMonitor.DeviceName;
         var target = ScreenEdgeTuckPolicy.GetExpandedPosition(
             selectedMonitor.Bounds,
@@ -903,6 +886,75 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
 
         _tuckState = WindowTuckState.Expanded;
         UpdateSideTuckVisual();
+    }
+
+    private void SystemEvents_DisplaySettingsChanged(object? sender, System.EventArgs e)
+    {
+        if (_tuckState != WindowTuckState.Tucked)
+        {
+            return;
+        }
+
+        Dispatcher.BeginInvoke(new System.Action(() => _ = RepositionTuckedWindowAsync()));
+    }
+
+    private async System.Threading.Tasks.Task RepositionTuckedWindowAsync()
+    {
+        if (_tuckState != WindowTuckState.Tucked)
+        {
+            return;
+        }
+
+        var handle = new System.Windows.Interop.WindowInteropHelper(this).EnsureHandle();
+        if (!GetWindowRect(handle, out var rect))
+        {
+            return;
+        }
+
+        var selectedMonitor = SelectMonitorForWindow(rect);
+        _tuckMonitorDeviceName = selectedMonitor.DeviceName;
+        var target = GetTuckedPosition(
+            selectedMonitor.Bounds,
+            handle,
+            rect.Bottom - rect.Top);
+
+        await AnimateWindowPositionAsync(
+            handle,
+            new NativePoint(rect.Left, rect.Top),
+            target);
+    }
+
+    private MonitorWorkArea SelectMonitorForWindow(NativeRect rect)
+    {
+        var monitors = GetMonitorWorkAreas();
+        return ScreenEdgeTuckPolicy.SelectMonitor(
+            _tuckMonitorDeviceName,
+            monitors,
+            new NativeBounds(
+                rect.Left,
+                rect.Top,
+                rect.Right - rect.Left,
+                rect.Bottom - rect.Top));
+    }
+
+    private static MonitorWorkArea[] GetMonitorWorkAreas() =>
+        System.Windows.Forms.Screen.AllScreens
+            .Select(screen => new MonitorWorkArea(
+                screen.DeviceName,
+                ToNativeBounds(screen.WorkingArea),
+                screen.Primary))
+            .ToArray();
+
+    private static NativePoint GetTuckedPosition(
+        NativeBounds workArea,
+        System.IntPtr handle,
+        int windowHeight)
+    {
+        var dpiScale = System.Math.Max(1, GetDpiForWindow(handle)) / 96.0;
+        return ScreenEdgeTuckPolicy.GetTuckedPosition(
+            workArea,
+            windowHeight,
+            ScreenEdgeTuckPolicy.GetTabWidthPixels(dpiScale));
     }
 
     private System.Threading.Tasks.Task AnimateWindowPositionAsync(
@@ -1358,6 +1410,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         }
 
         _disposed = true;
+        Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
         _usageAgeTimer.Stop();
         _monitor.Dispose();
         PlaySound(null, System.IntPtr.Zero, 0);
