@@ -22,13 +22,28 @@ public sealed class CodexRecordParserTests
     {
         const string line =
             """
-            {"timestamp":"2026-07-24T16:05:22.193Z","type":"turn_context","payload":{"model":"gpt-5.6-luna","turn_id":"turn-1"}}
+            {"timestamp":"2026-07-24T16:05:22.193Z","type":"turn_context","payload":{"model":"gpt-5.6-luna","cwd":"C:\\work\\project-y","turn_id":"turn-1"}}
             """;
 
         Assert.True(CodexRecordParser.TryParse(line, out var parsed));
         Assert.NotNull(parsed);
         Assert.Equal("gpt-5.6-luna", parsed.Model);
+        Assert.Equal(@"C:\work\project-y", parsed.WorkingDirectory);
         Assert.Null(parsed.Usage);
+    }
+
+    [Fact]
+    public void ParsesTurnContextWorkingDirectoryWithoutModel()
+    {
+        const string line =
+            """
+            {"timestamp":"2026-07-24T16:05:22.193Z","type":"turn_context","payload":{"cwd":"C:\\work\\project-y","turn_id":"turn-1"}}
+            """;
+
+        Assert.True(CodexRecordParser.TryParse(line, out var parsed));
+        Assert.NotNull(parsed);
+        Assert.Equal(@"C:\work\project-y", parsed.WorkingDirectory);
+        Assert.Null(parsed.Model);
     }
 
     [Fact]

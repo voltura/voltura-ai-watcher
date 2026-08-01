@@ -1,3 +1,7 @@
+## v0.2.2
+
+- Shows Git status from the repository used by each Codex turn, even when a chat started in a different folder.
+
 ## v0.2.1
 
 - Fix alignment of tugged away main window after monitor off

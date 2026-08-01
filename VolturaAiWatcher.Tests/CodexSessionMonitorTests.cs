@@ -52,7 +52,7 @@ public sealed class CodexSessionMonitorTests
             rollout,
             """
             {"timestamp":"2026-07-24T23:07:00.000Z","type":"event_msg","payload":{"type":"task_started"}}
-            {"timestamp":"2026-07-24T23:07:00.500Z","type":"turn_context","payload":{"model":"gpt-5.6-sol","turn_id":"turn-2"}}
+            {"timestamp":"2026-07-24T23:07:00.500Z","type":"turn_context","payload":{"model":"gpt-5.6-sol","cwd":"C:\\work\\project-y","turn_id":"turn-2"}}
             {"timestamp":"2026-07-24T23:07:00.700Z","type":"event_msg","payload":{"type":"token_count","info":{"model_context_window":258400,"last_token_usage":{"total_tokens":56000}},"rate_limits":{"primary":{"used_percent":2.0,"window_minutes":10080,"resets_at":1786184923}}}}
             {"timestamp":"2026-07-24T23:07:01.000Z","type":"event_msg","payload":{"type":"agent_message","message":"Working on x y z..."}}
             {"timestamp":"2026-07-24T23:07:02.000Z","type":"event_msg","payload":{"type":"task_complete"}}
@@ -71,7 +71,8 @@ public sealed class CodexSessionMonitorTests
         var newMessage = Assert.Single(
             observed,
             item => !item.Historical && item.Message.Text == "Working on x y z...");
-        Assert.Equal("project-x", newMessage.Message.ProjectName);
+        Assert.Equal("project-y", newMessage.Message.ProjectName);
+        Assert.Equal(@"C:\work\project-y", newMessage.Message.WorkingDirectory);
         Assert.Equal("Chat title y", newMessage.Message.ChatTitle);
         Assert.Contains(
             statuses,

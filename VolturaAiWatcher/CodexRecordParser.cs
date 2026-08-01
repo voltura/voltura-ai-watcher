@@ -47,19 +47,20 @@ public static class CodexRecordParser
             if (string.Equals(recordType, "turn_context", System.StringComparison.Ordinal))
             {
                 var model = ReadString(payload, "model");
-                if (string.IsNullOrWhiteSpace(model))
+                var workingDirectory = ReadString(payload, "cwd");
+                if (string.IsNullOrWhiteSpace(model) && string.IsNullOrWhiteSpace(workingDirectory))
                 {
                     return false;
                 }
 
                 parsed = new CodexParsedRecord(
                     null,
-                    null,
+                    string.IsNullOrWhiteSpace(workingDirectory) ? null : workingDirectory.Trim(),
                     null,
                     null,
                     null,
                     occurredAt,
-                    model.Trim());
+                    string.IsNullOrWhiteSpace(model) ? null : model.Trim());
                 return true;
             }
 
