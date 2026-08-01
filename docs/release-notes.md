@@ -1,7 +1,9 @@
 ## v0.1.9
 
+- Matches the inactive screen-edge tab surface to the main message panel.
 - Adds a setting to show minimized notifications only for Codex responses, without showing your own prompts.
 - Shows submenu arrows in neon green so they remain visible against the dark notification-area menus.
+- Shows Codex weekly usage, context-window usage, token counts, and the active model from local session telemetry.
 
 ## v0.1.8
 

@@ -17,6 +17,53 @@ public sealed class CodexRecordParserTests
         Assert.Equal(System.DateTimeOffset.Parse("2026-07-24T16:05:21.193Z"), parsed.OccurredAt);
     }
 
+    [Fact]
+    public void ParsesTurnContextModel()
+    {
+        const string line =
+            """
+            {"timestamp":"2026-07-24T16:05:22.193Z","type":"turn_context","payload":{"model":"gpt-5.6-luna","turn_id":"turn-1"}}
+            """;
+
+        Assert.True(CodexRecordParser.TryParse(line, out var parsed));
+        Assert.NotNull(parsed);
+        Assert.Equal("gpt-5.6-luna", parsed.Model);
+        Assert.Null(parsed.Usage);
+    }
+
+    [Fact]
+    public void ParsesTokenCountUsageAndWeeklyRemaining()
+    {
+        const string line =
+            """
+            {"timestamp":"2026-07-24T16:05:23.193Z","type":"event_msg","payload":{"type":"token_count","info":{"model_context_window":258400,"last_token_usage":{"total_tokens":56000}},"rate_limits":{"primary":{"used_percent":1.0,"window_minutes":10080,"resets_at":1786184923}}}}
+            """;
+
+        Assert.True(CodexRecordParser.TryParse(line, out var parsed));
+        Assert.NotNull(parsed);
+        Assert.NotNull(parsed.Usage);
+        Assert.Equal(56000, parsed.Usage.ContextTokensUsed);
+        Assert.Equal(258400, parsed.Usage.ContextWindowTokens);
+        Assert.Equal(99, parsed.Usage.WeeklyRemainingPercent);
+        Assert.Equal(
+            System.DateTimeOffset.FromUnixTimeSeconds(1786184923),
+            parsed.Usage.WeeklyResetAt);
+    }
+
+    [Fact]
+    public void DoesNotTreatNonWeeklyRateLimitAsWeeklyUsage()
+    {
+        const string line =
+            """
+            {"timestamp":"2026-07-24T16:05:24.193Z","type":"event_msg","payload":{"type":"token_count","info":{"model_context_window":258400,"last_token_usage":{"total_tokens":56000}},"rate_limits":{"primary":{"used_percent":12.0,"window_minutes":300,"resets_at":1786184923}}}}
+            """;
+
+        Assert.True(CodexRecordParser.TryParse(line, out var parsed));
+        Assert.NotNull(parsed?.Usage);
+        Assert.Null(parsed!.Usage!.WeeklyRemainingPercent);
+        Assert.Null(parsed.Usage.WeeklyResetAt);
+    }
+
     [Theory]
     [InlineData("user_message", "You", CodexChatStatus.Starting)]
     [InlineData("agent_message", "Codex", CodexChatStatus.Working)]
@@ -55,7 +102,7 @@ public sealed class CodexRecordParserTests
     [InlineData("agent_reasoning")]
     [InlineData("token_count")]
     [InlineData("mcp_tool_call_end")]
-    public void IgnoresInternalEvents(string eventType)
+    public void IgnoresInternalOrMalformedEvents(string eventType)
     {
         var line =
             $"{{\"timestamp\":\"2026-07-24T22:51:35.193Z\",\"type\":\"event_msg\",\"payload\":{{\"type\":\"{eventType}\",\"message\":\"private internal data\"}}}}";

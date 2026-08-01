@@ -182,7 +182,7 @@
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Foreground" Value="#7CFF9A" />
-            <Setter Property="Background" Value="#F20A140E" />
+            <Setter Property="Background" Value="#FF070C09" />
             <Setter Property="BorderBrush" Value="#A85CD77A" />
             <Setter Property="ToolTipService.InitialShowDelay" Value="60" />
             <Setter Property="Template">
@@ -400,6 +400,12 @@
                                    FontSize="8"
                                    Margin="14,4,0,0"
                                    TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding WeeklyUsageText}"
+                                   Foreground="#7CFF9A"
+                                   FontSize="8"
+                                   Margin="14,3,0,0"
+                                   TextTrimming="CharacterEllipsis"
+                                   ToolTip="{Binding WeeklyUsageToolTip}" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                         <Button Style="{StaticResource IconButton}"
@@ -420,6 +426,12 @@
                                 Click="ClearResolved_Click"
                                 ToolTip="Clear resolved messages">
                             <Path Data="M3,5 H15 M6,5 V3 H12 V5 M5,7 L6,15 H12 L13,7 M8,8 V13 M10,8 V13"
+                                  Style="{StaticResource IconPath}" />
+                        </Button>
+                        <Button Style="{StaticResource IconButton}"
+                                Click="OpenUsage_Click"
+                                ToolTip="Open Codex usage">
+                            <Path Data="M2,10 A6,6 0 1 1 14,10 M8,4 V10 L11,8"
                                   Style="{StaticResource IconPath}" />
                         </Button>
                         <Button Style="{StaticResource IconButton}"
@@ -585,6 +597,7 @@
                     <DataTemplate>
                         <Border x:Name="RowShell"
                                 Tag="{Binding}"
+                                ToolTip="{Binding UsageToolTip}"
                                 Padding="10,9"
                                 Cursor="Hand"
                                 Background="#FF0B1710"

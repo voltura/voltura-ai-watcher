@@ -9,6 +9,7 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
     private bool _isLatestForThread;
     private string _text = string.Empty;
     private StructuredMessagePresentation? _structuredPresentation;
+    private CodexUsageSnapshot? _usage;
 
     public required string Id { get; init; }
     public required string ThreadId { get; init; }
@@ -74,7 +75,25 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
     public bool IsLatestForThread
     {
         get => _isLatestForThread;
-        set => SetField(ref _isLatestForThread, value);
+        set
+        {
+            if (SetField(ref _isLatestForThread, value))
+            {
+                OnPropertyChanged(nameof(UsageToolTip));
+            }
+        }
+    }
+
+    public CodexUsageSnapshot? Usage
+    {
+        get => _usage;
+        set
+        {
+            if (SetField(ref _usage, value))
+            {
+                OnPropertyChanged(nameof(UsageToolTip));
+            }
+        }
     }
 
     public string HeaderText => $"{Sender.ToUpperInvariant()} // {ProjectName.ToUpperInvariant()} // {ChatTitle.ToUpperInvariant()}";
@@ -88,6 +107,9 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
             CodexChatStatusPolicy.GetColor(Status))!;
     public bool IsWorking => Status is CodexChatStatus.Starting or CodexChatStatus.Working;
     public string StatusSummary => IsUnread ? $"{StatusLabel} · UNREAD" : StatusLabel;
+    public string? UsageToolTip => IsLatestForThread
+        ? CodexUsageFormatter.FormatThreadToolTip(Usage)
+        : null;
     public ReferencedFileResolution? ReferencedFileReference { get; init; }
     public string? ReferencedFilePath => ReferencedFileReference?.Path;
     public bool IsReferencedFileAvailable =>
@@ -97,6 +119,8 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
         ReferencedFileToolTipFormatter.FormatAutomaticOpen(ReferencedFileReference);
 
     public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+
+    internal void RefreshUsagePresentation() => OnPropertyChanged(nameof(UsageToolTip));
 
     private bool SetField<T>(ref T field, T value, [System.Runtime.CompilerServices.CallerMemberName] string? name = null)
     {

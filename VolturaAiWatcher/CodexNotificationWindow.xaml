@@ -145,6 +145,7 @@
                     Background="#B009110C"
                     BorderBrush="#4D54B96B"
                     BorderThickness="1"
+                    ToolTip="{Binding UsageToolTip}"
                     Cursor="Hand"
                     PreviewMouseLeftButtonUp="Message_Click">
                 <Grid>

@@ -11,6 +11,11 @@ public sealed record CodexObservedMessage(
     System.DateTimeOffset OccurredAt,
     CodexChatStatus Status);
 
+public sealed record CodexObservedUsage(
+    string ThreadId,
+    CodexUsageSnapshot Usage,
+    bool Historical);
+
 public sealed class CodexSessionMonitor : System.IDisposable
 {
     private const int HistoricalFileLimit = 50;
@@ -53,6 +58,7 @@ public sealed class CodexSessionMonitor : System.IDisposable
 
     public event System.Action<CodexObservedMessage, bool>? MessageObserved;
     public event System.Action<string, CodexChatStatus, System.DateTimeOffset, bool>? StatusObserved;
+    public event System.Action<CodexObservedUsage>? UsageObserved;
     public event System.Action<string, string>? TitleObserved;
     public event System.Action<System.Collections.Generic.IReadOnlySet<string>>? UnreadThreadsChanged;
     public event System.Action<string>? MonitorWarning;
@@ -298,6 +304,8 @@ public sealed class CodexSessionMonitor : System.IDisposable
                 cursor.PendingBytes = [];
                 cursor.ThreadId = null;
                 cursor.WorkingDirectory = null;
+                cursor.Model = null;
+                cursor.Usage = null;
             }
 
             if (fileLength <= cursor.Offset)
@@ -372,6 +380,26 @@ public sealed class CodexSessionMonitor : System.IDisposable
         if (string.IsNullOrWhiteSpace(threadId))
         {
             return;
+        }
+
+        if (parsed.Model is { Length: > 0 } model)
+        {
+            cursor.Model = model;
+            if (cursor.Usage is { } existingUsage)
+            {
+                cursor.Usage = existingUsage with
+                {
+                    Model = model,
+                    ObservedAt = parsed.OccurredAt
+                };
+                UsageObserved?.Invoke(new CodexObservedUsage(threadId, cursor.Usage, historical));
+            }
+        }
+
+        if (parsed.Usage is { } usage)
+        {
+            cursor.Usage = usage with { Model = usage.Model ?? cursor.Model };
+            UsageObserved?.Invoke(new CodexObservedUsage(threadId, cursor.Usage, historical));
         }
 
         if (parsed.Status is { } status)
@@ -604,6 +632,8 @@ public sealed class CodexSessionMonitor : System.IDisposable
         public byte[] PendingBytes { get; set; } = [];
         public string? ThreadId { get; set; }
         public string? WorkingDirectory { get; set; }
+        public string? Model { get; set; }
+        public CodexUsageSnapshot? Usage { get; set; }
         public CodexChatStatus Status { get; set; } = CodexChatStatus.Idle;
     }
 }

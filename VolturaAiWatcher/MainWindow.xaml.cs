@@ -21,10 +21,13 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         new(System.StringComparer.Ordinal);
     private readonly System.Collections.Generic.Dictionary<string, CodexMessageEntry> _latestByThread =
         new(System.StringComparer.Ordinal);
+    private readonly System.Collections.Generic.Dictionary<string, CodexUsageSnapshot> _usageByThread =
+        new(System.StringComparer.Ordinal);
     private readonly System.Collections.Generic.HashSet<string> _unreadThreads = new(System.StringComparer.Ordinal);
     private readonly System.ComponentModel.IContainer _trayComponents = new System.ComponentModel.Container();
     private readonly CodexSessionMonitor _monitor;
     private readonly CodexNotificationWindow _notificationWindow;
+    private readonly System.Windows.Threading.DispatcherTimer _usageAgeTimer;
     private readonly string _sparkSoundPath;
     private AppSettings _settings;
     private System.Windows.Forms.NotifyIcon? _notifyIcon;
@@ -44,6 +47,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
     private string _visibleCountText = "0 MESSAGES";
     private string _activeChatFilterText = "ALL CHATS";
     private string? _activeChatThreadId;
+    private CodexUsageSnapshot? _latestWeeklyUsage;
 
     public MainWindow()
     {
@@ -66,10 +70,17 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         _monitor = new CodexSessionMonitor();
         _monitor.MessageObserved += Monitor_MessageObserved;
         _monitor.StatusObserved += Monitor_StatusObserved;
+        _monitor.UsageObserved += Monitor_UsageObserved;
         _monitor.TitleObserved += Monitor_TitleObserved;
         _monitor.UnreadThreadsChanged += Monitor_UnreadThreadsChanged;
         _monitor.MonitorWarning += Monitor_MonitorWarning;
         _notificationWindow = new CodexNotificationWindow(OpenMessageAsync);
+        _usageAgeTimer = new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = System.TimeSpan.FromSeconds(30)
+        };
+        _usageAgeTimer.Tick += (_, _) => RefreshUsagePresentation();
+        _usageAgeTimer.Start();
 
         DataContext = this;
         UpdateSoundIcon();
@@ -100,6 +111,9 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         get => _activeChatFilterText;
         private set => SetField(ref _activeChatFilterText, value);
     }
+
+    public string WeeklyUsageText => CodexUsageFormatter.FormatWeeklySummary(_latestWeeklyUsage);
+    public string WeeklyUsageToolTip => CodexUsageFormatter.FormatWeeklyToolTip(_latestWeeklyUsage);
 
     public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
 
@@ -239,6 +253,9 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
                 Text = message.Text,
                 OccurredAt = message.OccurredAt,
                 Status = status,
+                Usage = _usageByThread.TryGetValue(message.ThreadId, out var usage)
+                    ? usage
+                    : null,
                 ReferencedFileReference = ReferencedFileResolver.ResolveFirstExistingFileReference(
                     message.Text,
                     message.WorkingDirectory),
@@ -266,6 +283,32 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
                 ShowNotification(entry);
             }
 
+        }));
+    }
+
+    private void Monitor_UsageObserved(CodexObservedUsage observed)
+    {
+        Dispatcher.BeginInvoke(new System.Action(() =>
+        {
+            if (_usageByThread.TryGetValue(observed.ThreadId, out var existing) &&
+                !CodexUsagePolicy.IsNewer(existing, observed.Usage))
+            {
+                return;
+            }
+
+            _usageByThread[observed.ThreadId] = observed.Usage;
+            if (_latestByThread.TryGetValue(observed.ThreadId, out var latest))
+            {
+                latest.Usage = observed.Usage;
+            }
+
+            if (observed.Usage.WeeklyRemainingPercent.HasValue &&
+                (_latestWeeklyUsage is null ||
+                 observed.Usage.ObservedAt >= _latestWeeklyUsage.ObservedAt))
+            {
+                _latestWeeklyUsage = observed.Usage;
+                RefreshUsagePresentation();
+            }
         }));
     }
 
@@ -513,6 +556,12 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         FooterStatus = "Opening Codex...";
         var opened = await CodexWindowActivator.OpenAsync(null);
         FooterStatus = opened ? "Codex is visible." : "Codex could not be brought to the foreground.";
+    }
+
+    private void OpenUsage_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        FooterStatus = "Opening Codex usage...";
+        OpenWebPage("https://chatgpt.com/codex/settings/usage");
     }
 
     private void ToggleSound_Click(object sender, System.Windows.RoutedEventArgs e)
@@ -1210,6 +1259,16 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         return true;
     }
 
+    private void RefreshUsagePresentation()
+    {
+        PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(WeeklyUsageText)));
+        PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(WeeklyUsageToolTip)));
+        foreach (var entry in _latestByThread.Values)
+        {
+            entry.RefreshUsagePresentation();
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed)
@@ -1218,6 +1277,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         }
 
         _disposed = true;
+        _usageAgeTimer.Stop();
         _monitor.Dispose();
         PlaySound(null, System.IntPtr.Zero, 0);
         _notificationWindow.Dispose();
