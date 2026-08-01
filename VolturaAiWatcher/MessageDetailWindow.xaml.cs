@@ -106,6 +106,30 @@ public partial class MessageDetailWindow : System.Windows.Window
         Close();
     }
 
+    private async void ReviewChanges_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (_entry.GitRepository is not
+            {
+                IsRepository: true,
+                HasChanges: true,
+                Error: null
+            } snapshot ||
+            string.IsNullOrWhiteSpace(snapshot.RepositoryRoot))
+        {
+            return;
+        }
+
+        var opened = await CodexWindowActivator.OpenNewChatAsync(snapshot.RepositoryRoot, "/review");
+        if (opened)
+        {
+            Close();
+        }
+        else
+        {
+            App.WriteStartupLog("Codex review chat could not be opened.");
+        }
+    }
+
     private async void RefreshGit_Click(object sender, System.Windows.RoutedEventArgs e) =>
         await RefreshGitStatusAsync();
 

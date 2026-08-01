@@ -1,5 +1,6 @@
 ## v0.2.0
 
+- Opens a separate repository-scoped Codex chat with the uncommitted-changes review action ready to start.
 - Shows the active Git branch and repository change statistics in message details, with a reviewed commit-and-push action.
 - Uses a brighter background for tooltips so their content stands apart from the watcher window.
 - Shows Codex weekly usage, context-window usage, token counts, and the active model from local session telemetry, now also included in minimized notifications.

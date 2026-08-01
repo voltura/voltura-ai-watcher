@@ -144,6 +144,7 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
                 OnPropertyChanged(nameof(GitHeaderText));
                 OnPropertyChanged(nameof(GitToolTip));
                 OnPropertyChanged(nameof(CanCommitAndPush));
+                OnPropertyChanged(nameof(CanLaunchReview));
                 OnPropertyChanged(nameof(CanRefreshGit));
             }
         }
@@ -159,6 +160,7 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
                 OnPropertyChanged(nameof(GitHeaderText));
                 OnPropertyChanged(nameof(GitToolTip));
                 OnPropertyChanged(nameof(CanCommitAndPush));
+                OnPropertyChanged(nameof(CanLaunchReview));
                 OnPropertyChanged(nameof(CanRefreshGit));
             }
         }
@@ -167,6 +169,9 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
     public string GitHeaderText => GitRepositoryFormatter.FormatHeader(GitRepository, IsGitRefreshing);
     public string GitToolTip => GitRepositoryFormatter.FormatToolTip(GitRepository, IsGitRefreshing);
     public bool CanCommitAndPush => !IsGitRefreshing && GitRepository?.CanCommitAndPush is true;
+    public bool CanLaunchReview =>
+        !IsGitRefreshing &&
+        GitRepository is { IsRepository: true, HasChanges: true, Error: null };
     public bool CanRefreshGit => !IsGitRefreshing;
     public ReferencedFileResolution? ReferencedFileReference { get; init; }
     public string? ReferencedFilePath => ReferencedFileReference?.Path;

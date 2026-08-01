@@ -67,6 +67,46 @@ public static class CodexWindowActivator
         return existing != System.IntPtr.Zero;
     }
 
+    public static System.Threading.Tasks.Task<bool> OpenNewChatAsync(
+        string? workspacePath,
+        string initialPrompt)
+    {
+        if (string.IsNullOrWhiteSpace(workspacePath) ||
+            !System.IO.Path.IsPathFullyQualified(workspacePath) ||
+            !System.IO.Directory.Exists(workspacePath) ||
+            string.IsNullOrWhiteSpace(initialPrompt))
+        {
+            return System.Threading.Tasks.Task.FromResult(false);
+        }
+
+        var uri = BuildNewChatUri(workspacePath, initialPrompt);
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = uri,
+                UseShellExecute = true
+            });
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return System.Threading.Tasks.Task.FromResult(false);
+        }
+
+        // A pre-existing Codex window cannot prove that this deep link created
+        // or selected the requested repository-scoped chat. Process.Start
+        // succeeding is the strongest result available from the shell URI
+        // dispatch; the Codex app owns the subsequent navigation.
+        return System.Threading.Tasks.Task.FromResult(true);
+    }
+
+    internal static string BuildNewChatUri(string workspacePath, string initialPrompt)
+    {
+        var normalizedPath = System.IO.Path.GetFullPath(workspacePath);
+        return $"codex://new?path={System.Uri.EscapeDataString(normalizedPath)}" +
+               $"&prompt={System.Uri.EscapeDataString(initialPrompt)}";
+    }
+
     private static System.IntPtr FindCodexWindow()
     {
         foreach (var process in System.Diagnostics.Process.GetProcesses())

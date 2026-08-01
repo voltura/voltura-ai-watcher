@@ -357,6 +357,11 @@
                             ToolTip="Copy the original message"
                             Click="Copy_Click" />
                     <Button Style="{StaticResource DetailButton}"
+                            Content="REVIEW"
+                            IsEnabled="{Binding CanLaunchReview}"
+                            ToolTip="Launch an Review uncommitted changes action."
+                            Click="ReviewChanges_Click" />
+                    <Button Style="{StaticResource DetailButton}"
                             Content="OPEN IN CODEX"
                             Click="OpenCodex_Click" />
                     <Button Style="{StaticResource DetailButton}"

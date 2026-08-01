@@ -210,6 +210,37 @@ public sealed class GitRepositoryServiceTests
         Assert.Empty(runner.Calls);
     }
 
+    [Fact]
+    public void MessageEntryEnablesReviewOnlyForAvailableDirtyRepository()
+    {
+        var entry = CreateMessageEntry();
+        var dirty = CreateSnapshot("main");
+
+        entry.GitRepository = dirty;
+        Assert.True(entry.CanLaunchReview);
+
+        entry.GitRepository = dirty with { ChangedFiles = 0, NewFiles = 0, DeletedFiles = 0 };
+        Assert.False(entry.CanLaunchReview);
+
+        entry.GitRepository = dirty;
+        entry.IsGitRefreshing = true;
+        Assert.False(entry.CanLaunchReview);
+
+        entry.IsGitRefreshing = false;
+        entry.GitRepository = dirty with { Error = "status unavailable" };
+        Assert.False(entry.CanLaunchReview);
+    }
+
+    private static VolturaAiWatcher.CodexMessageEntry CreateMessageEntry() => new()
+    {
+        Id = "id",
+        ThreadId = "thread",
+        ProjectName = "project",
+        Sender = "Codex",
+        Text = "message",
+        OccurredAt = System.DateTimeOffset.UtcNow
+    };
+
     private static VolturaAiWatcher.GitRepositorySnapshot CreateSnapshot(string? branch) => new(
         System.IO.Path.GetFullPath("."),
         branch,
