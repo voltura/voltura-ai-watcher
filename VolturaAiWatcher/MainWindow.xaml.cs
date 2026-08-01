@@ -922,7 +922,10 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
 
     private void ShowNotification(CodexMessageEntry entry)
     {
-        if (_settings.NotificationDurationSeconds == NotificationDurationPolicy.Off)
+        if (_settings.NotificationDurationSeconds == NotificationDurationPolicy.Off ||
+            !NotificationMessagePolicy.ShouldShow(
+                entry.Sender,
+                _settings.OnlyShowCodexResponseNotifications))
         {
             return;
         }
@@ -990,6 +993,18 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         _playSoundMenuItem.Checked = _settings.PlaySoundOnMessage;
         _playSoundMenuItem.Click += (_, _) => Dispatcher.Invoke(() =>
             SetPlaySoundEnabled(_playSoundMenuItem.Checked, previewWhenEnabled: true));
+        var codexResponsesOnly = CreateMenuItem("Only notify for Codex responses", checkOnClick: true);
+        codexResponsesOnly.Checked = _settings.OnlyShowCodexResponseNotifications;
+        codexResponsesOnly.CheckedChanged += (_, _) => Dispatcher.Invoke(() =>
+        {
+            _settings.OnlyShowCodexResponseNotifications = codexResponsesOnly.Checked;
+            if (codexResponsesOnly.Checked)
+            {
+                _notificationWindow.DismissIfShowingNonCodexResponse();
+            }
+
+            SaveSettings();
+        });
         var notificationDuration = CreateMenuItem("Notification display time");
         ApplyDropDownTheme(notificationDuration.DropDown);
         var durationItems = new System.Collections.Generic.Dictionary<int, System.Windows.Forms.ToolStripMenuItem>();
@@ -1055,6 +1070,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
                 _startMinimizedMenuItem,
                 _startWithWindowsMenuItem,
                 _playSoundMenuItem,
+                codexResponsesOnly,
                 notificationDuration,
                 _showClearedMenuItem
             ]);

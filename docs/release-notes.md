@@ -1,3 +1,8 @@
+## v0.1.9
+
+- Adds a setting to show minimized notifications only for Codex responses, without showing your own prompts.
+- Shows submenu arrows in neon green so they remain visible against the dark notification-area menus.
+
 ## v0.1.8
 
 - Adds a screen-edge tab that smoothly tucks the message panel aside while keeping new-activity notifications available.

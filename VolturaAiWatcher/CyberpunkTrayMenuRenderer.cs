@@ -61,6 +61,14 @@ public sealed class CyberpunkTrayMenuRenderer : System.Windows.Forms.ToolStripPr
             ]);
     }
 
+    protected override void OnRenderArrow(System.Windows.Forms.ToolStripArrowRenderEventArgs e)
+    {
+        e.ArrowColor = e.Item is null || e.Item.Enabled
+            ? Accent
+            : System.Drawing.Color.FromArgb(91, 123, 99);
+        base.OnRenderArrow(e);
+    }
+
     private sealed class CyberpunkColorTable : System.Windows.Forms.ProfessionalColorTable
     {
         public override System.Drawing.Color MenuBorder => Border;

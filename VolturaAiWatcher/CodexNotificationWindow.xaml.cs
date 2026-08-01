@@ -91,6 +91,15 @@ public partial class CodexNotificationWindow : System.Windows.Window, System.IDi
         Hide();
     }
 
+    public void DismissIfShowingNonCodexResponse()
+    {
+        if (DataContext is CodexMessageEntry entry &&
+            !NotificationMessagePolicy.IsCodexResponse(entry.Sender))
+        {
+            Dismiss();
+        }
+    }
+
     private void PositionAboveTaskbar()
     {
         var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
