@@ -4,19 +4,24 @@ public partial class MessageDetailWindow : System.Windows.Window
 {
     private readonly System.Collections.Generic.IReadOnlyList<CodexMessageEntry> _entries;
     private readonly System.Func<CodexMessageEntry, System.Threading.Tasks.Task> _openMessage;
+    private readonly GitRepositoryService _gitRepositoryService;
+    private System.Threading.CancellationTokenSource? _gitRefreshCancellation;
     private int _index;
     private CodexMessageEntry _entry;
 
     public MessageDetailWindow(
         CodexMessageEntry entry,
         System.Collections.Generic.IReadOnlyList<CodexMessageEntry> entries,
-        System.Func<CodexMessageEntry, System.Threading.Tasks.Task> openMessage)
+        System.Func<CodexMessageEntry, System.Threading.Tasks.Task> openMessage,
+        GitRepositoryService gitRepositoryService)
     {
         InitializeComponent();
         _entry = entry;
         _entries = entries.Count > 0 ? entries : [entry];
         _index = FindEntryIndex(entry);
         _openMessage = openMessage;
+        _gitRepositoryService = gitRepositoryService;
+        Closed += (_, _) => CancelGitRefresh();
         ShowCurrentEntry();
     }
 
@@ -44,6 +49,7 @@ public partial class MessageDetailWindow : System.Windows.Window
             _entry.WorkingDirectory);
         PreviousButton.IsEnabled = MessageNavigationPolicy.CanOpenPrevious(_index, _entries.Count);
         NextButton.IsEnabled = MessageNavigationPolicy.CanOpenNext(_index);
+        _ = RefreshGitStatusAsync();
     }
 
     private void Previous_Click(object sender, System.Windows.RoutedEventArgs e)
@@ -98,6 +104,75 @@ public partial class MessageDetailWindow : System.Windows.Window
     {
         await _openMessage(_entry);
         Close();
+    }
+
+    private async void RefreshGit_Click(object sender, System.Windows.RoutedEventArgs e) =>
+        await RefreshGitStatusAsync();
+
+    private async System.Threading.Tasks.Task RefreshGitStatusAsync()
+    {
+        CancelGitRefresh();
+        var cancellation = new System.Threading.CancellationTokenSource();
+        _gitRefreshCancellation = cancellation;
+        var entry = _entry;
+        entry.IsGitRefreshing = true;
+        try
+        {
+            var snapshot = await _gitRepositoryService.GetSnapshotAsync(
+                entry.WorkingDirectory,
+                cancellation.Token);
+            if (!cancellation.IsCancellationRequested && ReferenceEquals(entry, _entry))
+            {
+                entry.GitRepository = snapshot;
+            }
+        }
+        catch (System.OperationCanceledException)
+        {
+        }
+        catch (System.Exception ex)
+        {
+            App.WriteStartupLog($"Git status refresh failed: {ex.GetType().Name}: {ex.Message}");
+            if (ReferenceEquals(entry, _entry))
+            {
+                entry.GitRepository = GitRepositorySnapshot.Unavailable("Repository status could not be refreshed.");
+            }
+        }
+        finally
+        {
+            entry.IsGitRefreshing = false;
+            if (ReferenceEquals(_gitRefreshCancellation, cancellation))
+            {
+                _gitRefreshCancellation = null;
+            }
+
+            cancellation.Dispose();
+        }
+    }
+
+    private async void CommitPush_Click(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (_entry.GitRepository is not { CanCommitAndPush: true } snapshot)
+        {
+            return;
+        }
+
+        var dialog = new GitCommitPushDialog(
+            snapshot,
+            GitCommitMessageFormatter.CreateDefault(_entry.ProjectName, _entry.ChatTitle),
+            _gitRepositoryService)
+        {
+            Owner = this
+        };
+        if (dialog.ShowDialog() is true)
+        {
+            await RefreshGitStatusAsync();
+        }
+    }
+
+    private void CancelGitRefresh()
+    {
+        _gitRefreshCancellation?.Cancel();
+        _gitRefreshCancellation = null;
     }
 
     private void Close_Click(object sender, System.Windows.RoutedEventArgs e) => Close();

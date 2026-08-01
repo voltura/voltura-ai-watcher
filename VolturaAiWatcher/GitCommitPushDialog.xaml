@@ -1,0 +1,162 @@
+<Window x:Class="VolturaAiWatcher.GitCommitPushDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Commit and push"
+        Width="520"
+        SizeToContent="Height"
+        MinWidth="440"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="Bahnschrift SemiCondensed"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+    <Window.Resources>
+        <Style TargetType="ToolTip">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="Background" Value="#F21A2A1E" />
+            <Setter Property="Foreground" Value="#7CFF9A" />
+            <Setter Property="BorderBrush" Value="#6B4BFF7A" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="7,4" />
+            <Setter Property="FontSize" Value="9" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="DialogButton" TargetType="Button">
+            <Setter Property="Foreground" Value="#7CFF9A" />
+            <Setter Property="Background" Value="#FF0B1710" />
+            <Setter Property="BorderBrush" Value="#6254B96B" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Shell"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Shell" Property="Background" Value="#FF183021" />
+                                <Setter TargetName="Shell" Property="BorderBrush" Value="#B07CFF9A" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Shell" Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Background="#FF070C09"
+            BorderBrush="#B05CD77A"
+            BorderThickness="1"
+            CornerRadius="11"
+            Padding="18">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="COMMIT + PUSH REPOSITORY"
+                       Foreground="#7CFF9A"
+                       FontSize="15"
+                       FontWeight="Bold" />
+
+            <Border Grid.Row="1"
+                    Margin="0,14,0,0"
+                    Padding="10,8"
+                    Background="#FF0B1710"
+                    BorderBrush="#6254B96B"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    ToolTip="{Binding RepositoryToolTip}">
+                <StackPanel>
+                    <TextBlock Text="{Binding BranchSummary}"
+                               Foreground="#7CFF9A"
+                               FontWeight="Bold"
+                               FontSize="11" />
+                    <TextBlock Text="{Binding ChangeSummary}"
+                               Foreground="#74D98A"
+                               FontSize="10"
+                               Margin="0,4,0,0" />
+                    <TextBlock Text="{Binding RepositoryRoot}"
+                               Foreground="#587A61"
+                               FontSize="9"
+                               Margin="0,4,0,0"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </Border>
+
+            <StackPanel Grid.Row="2" Margin="0,14,0,0">
+                <TextBlock Text="COMMIT MESSAGE"
+                           Foreground="#74D98A"
+                           FontSize="10"
+                           FontWeight="Bold" />
+                <TextBox x:Name="CommitMessageTextBox"
+                         Text="{Binding CommitMessage, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="0,5,0,0"
+                         Padding="9,7"
+                         MinHeight="38"
+                         MaxLength="500"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         Foreground="#D2F4DA"
+                         CaretBrush="#7CFF9A"
+                         Background="#FF0B1710"
+                         BorderBrush="#6254B96B"
+                         BorderThickness="1" />
+            </StackPanel>
+
+            <TextBlock Grid.Row="3"
+                       Text="{Binding OperationStatus}"
+                       Foreground="{Binding OperationStatusBrush}"
+                       FontSize="10"
+                       Margin="0,10,0,0"
+                       TextWrapping="Wrap" />
+
+            <Grid Grid.Row="4" Margin="0,16,0,0">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="CANCEL"
+                            Style="{StaticResource DialogButton}"
+                            Margin="0"
+                            IsEnabled="{Binding CanEdit}"
+                            Click="Cancel_Click" />
+                    <Button Content="COMMIT + PUSH"
+                            Style="{StaticResource DialogButton}"
+                            IsEnabled="{Binding CanConfirm}"
+                            ToolTip="Stage every change, commit on the active branch, and push to its configured upstream"
+                            Click="Confirm_Click" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

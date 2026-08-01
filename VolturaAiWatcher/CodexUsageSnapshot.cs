@@ -18,6 +18,30 @@ public static class CodexUsagePolicy
 
 public static class CodexUsageFormatter
 {
+    public static string FormatThreadSummary(CodexUsageSnapshot? snapshot)
+    {
+        if (snapshot is null)
+        {
+            return "CONTEXT USAGE UNKNOWN";
+        }
+
+        var parts = new System.Collections.Generic.List<string>();
+        if (snapshot.ContextTokensUsed is { } used &&
+            snapshot.ContextWindowTokens is { } window &&
+            window > 0)
+        {
+            parts.Add($"CONTEXT {CalculatePercent(used, window)}% USED");
+            parts.Add($"{FormatTokenCount(used)} / {FormatTokenCount(window)}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(snapshot.Model))
+        {
+            parts.Add(FormatModel(snapshot.Model).ToUpperInvariant());
+        }
+
+        return parts.Count == 0 ? "CONTEXT USAGE UNKNOWN" : string.Join(" // ", parts);
+    }
+
     public static string FormatWeeklySummary(CodexUsageSnapshot? snapshot)
     {
         if (snapshot?.WeeklyRemainingPercent is not { } remaining)

@@ -33,7 +33,7 @@
 
         <Style TargetType="ToolTip">
             <Setter Property="OverridesDefaultStyle" Value="True" />
-            <Setter Property="Background" Value="#FA070C09" />
+            <Setter Property="Background" Value="#F21A2A1E" />
             <Setter Property="Foreground" Value="#7CFF9A" />
             <Setter Property="BorderBrush" Value="#705CD77A" />
             <Setter Property="BorderThickness" Value="1" />

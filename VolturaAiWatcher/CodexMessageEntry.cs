@@ -11,6 +11,8 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
     private StructuredMessagePresentation? _structuredPresentation;
     private CodexUsageSnapshot? _usage;
     private CodexUsageSnapshot? _weeklyUsage;
+    private GitRepositorySnapshot? _gitRepository;
+    private bool _isGitRefreshing;
 
     public required string Id { get; init; }
     public required string ThreadId { get; init; }
@@ -93,6 +95,8 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
             if (SetField(ref _usage, value))
             {
                 OnPropertyChanged(nameof(UsageToolTip));
+                OnPropertyChanged(nameof(DetailUsageText));
+                OnPropertyChanged(nameof(DetailUsageToolTip));
             }
         }
     }
@@ -124,8 +128,46 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
     public string? UsageToolTip => IsLatestForThread
         ? CodexUsageFormatter.FormatThreadToolTip(Usage)
         : null;
+    public string DetailUsageText => CodexUsageFormatter.FormatThreadSummary(Usage);
+    public string DetailUsageToolTip =>
+        CodexUsageFormatter.FormatThreadToolTip(Usage) ??
+        "Context-window usage is unavailable from local session telemetry.";
     public string WeeklyUsageText => CodexUsageFormatter.FormatWeeklySummary(WeeklyUsage);
     public string WeeklyUsageToolTip => CodexUsageFormatter.FormatWeeklyToolTip(WeeklyUsage);
+    public GitRepositorySnapshot? GitRepository
+    {
+        get => _gitRepository;
+        set
+        {
+            if (SetField(ref _gitRepository, value))
+            {
+                OnPropertyChanged(nameof(GitHeaderText));
+                OnPropertyChanged(nameof(GitToolTip));
+                OnPropertyChanged(nameof(CanCommitAndPush));
+                OnPropertyChanged(nameof(CanRefreshGit));
+            }
+        }
+    }
+
+    public bool IsGitRefreshing
+    {
+        get => _isGitRefreshing;
+        set
+        {
+            if (SetField(ref _isGitRefreshing, value))
+            {
+                OnPropertyChanged(nameof(GitHeaderText));
+                OnPropertyChanged(nameof(GitToolTip));
+                OnPropertyChanged(nameof(CanCommitAndPush));
+                OnPropertyChanged(nameof(CanRefreshGit));
+            }
+        }
+    }
+
+    public string GitHeaderText => GitRepositoryFormatter.FormatHeader(GitRepository, IsGitRefreshing);
+    public string GitToolTip => GitRepositoryFormatter.FormatToolTip(GitRepository, IsGitRefreshing);
+    public bool CanCommitAndPush => !IsGitRefreshing && GitRepository?.CanCommitAndPush is true;
+    public bool CanRefreshGit => !IsGitRefreshing;
     public ReferencedFileResolution? ReferencedFileReference { get; init; }
     public string? ReferencedFilePath => ReferencedFileReference?.Path;
     public bool IsReferencedFileAvailable =>

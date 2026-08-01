@@ -68,6 +68,25 @@ public sealed class CodexUsageSnapshotTests
     }
 
     [Fact]
+    public void FormatsCompactThreadSummaryForDetailHeader()
+    {
+        var snapshot = new VolturaAiWatcher.CodexUsageSnapshot(
+            "gpt-5.6-luna",
+            56000,
+            258400,
+            null,
+            null,
+            System.DateTimeOffset.UtcNow);
+
+        Assert.Equal(
+            "CONTEXT 22% USED // 56k / 258k // 5.6 LUNA",
+            VolturaAiWatcher.CodexUsageFormatter.FormatThreadSummary(snapshot));
+        Assert.Equal(
+            "CONTEXT USAGE UNKNOWN",
+            VolturaAiWatcher.CodexUsageFormatter.FormatThreadSummary(null));
+    }
+
+    [Fact]
     public void KeepsOnlyNewerUsageSnapshots()
     {
         var older = new VolturaAiWatcher.CodexUsageSnapshot(

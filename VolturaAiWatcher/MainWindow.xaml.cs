@@ -26,6 +26,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
     private readonly System.Collections.Generic.HashSet<string> _unreadThreads = new(System.StringComparer.Ordinal);
     private readonly System.ComponentModel.IContainer _trayComponents = new System.ComponentModel.Container();
     private readonly CodexSessionMonitor _monitor;
+    private readonly GitRepositoryService _gitRepositoryService = new();
     private readonly CodexNotificationWindow _notificationWindow;
     private readonly System.Windows.Threading.DispatcherTimer _usageAgeTimer;
     private readonly string _sparkSoundPath;
@@ -522,7 +523,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
             .Cast<CodexMessageEntry>()
             .OrderByDescending(message => message.OccurredAt)
             .ToArray();
-        var detail = new MessageDetailWindow(entry, visibleEntries, OpenMessageAsync)
+        var detail = new MessageDetailWindow(entry, visibleEntries, OpenMessageAsync, _gitRepositoryService)
         {
             Owner = this
         };

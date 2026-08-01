@@ -19,7 +19,7 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <Style TargetType="ToolTip">
             <Setter Property="OverridesDefaultStyle" Value="True" />
-            <Setter Property="Background" Value="#F20A0F0C" />
+            <Setter Property="Background" Value="#F21A2A1E" />
             <Setter Property="Foreground" Value="#7CFF9A" />
             <Setter Property="BorderBrush" Value="#6B4BFF7A" />
             <Setter Property="BorderThickness" Value="1" />
@@ -233,10 +233,64 @@
                            FontSize="10"
                            FontWeight="SemiBold"
                            TextWrapping="Wrap" />
-                <TextBlock Text="{Binding LocalTimeText}"
-                           Foreground="#587A61"
-                           FontSize="8"
-                           Margin="0,4,0,0" />
+                <Border Margin="0,6,0,0"
+                        Padding="7,3"
+                        HorizontalAlignment="Left"
+                        Background="#B00D1C13"
+                        BorderBrush="#4854B96B"
+                        BorderThickness="1"
+                        CornerRadius="5"
+                        ToolTip="{Binding DetailUsageToolTip}">
+                    <TextBlock Text="{Binding DetailUsageText}"
+                               Foreground="#74D98A"
+                               FontSize="9"
+                               FontWeight="SemiBold" />
+                </Border>
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding LocalTimeText}"
+                               Foreground="#587A61"
+                               FontSize="8"
+                               VerticalAlignment="Center" />
+                    <Border Grid.Column="1"
+                            Margin="12,0,6,0"
+                            Padding="7,3"
+                            Background="#B00D1C13"
+                            BorderBrush="#6254B96B"
+                            BorderThickness="1"
+                            CornerRadius="5"
+                            ToolTip="{Binding GitToolTip}">
+                        <TextBlock Text="{Binding GitHeaderText}"
+                                   Foreground="#7CFF9A"
+                                   FontSize="9"
+                                   FontWeight="Bold"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Border>
+                    <Button Grid.Column="2"
+                            Style="{StaticResource DetailHeaderActionButton}"
+                            IsEnabled="{Binding CanRefreshGit}"
+                            ToolTip="Refresh repository status"
+                            Click="RefreshGit_Click">
+                        <Path Data="M12.5,5 A5,5 0 1 0 13,10 M12.5,2 V5 H9.5"
+                              Style="{StaticResource DetailHeaderActionIcon}" />
+                    </Button>
+                    <Button Grid.Column="3"
+                            Style="{StaticResource DetailHeaderActionButton}"
+                            Width="48"
+                            Margin="5,0,0,0"
+                            IsEnabled="{Binding CanCommitAndPush}"
+                            Content="PUSH"
+                            Foreground="#7CFF9A"
+                            FontSize="9"
+                            FontWeight="Bold"
+                            ToolTip="Review, commit, and push all repository changes"
+                            Click="CommitPush_Click" />
+                </Grid>
             </StackPanel>
 
             <Border Grid.Row="2"
