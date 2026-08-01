@@ -1,3 +1,7 @@
+## v0.2.1
+
+- Fix alignment of tugged away main window after monitor off
+
 ## v0.2.0
 
 - Adds configurable minimized-message clicks with quick actions for showing message details or opening the related Codex chat, tucking the Watcher when opened from a context menu.
