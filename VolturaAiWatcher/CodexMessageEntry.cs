@@ -10,6 +10,7 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
     private string _text = string.Empty;
     private StructuredMessagePresentation? _structuredPresentation;
     private CodexUsageSnapshot? _usage;
+    private CodexUsageSnapshot? _weeklyUsage;
 
     public required string Id { get; init; }
     public required string ThreadId { get; init; }
@@ -96,6 +97,19 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
         }
     }
 
+    public CodexUsageSnapshot? WeeklyUsage
+    {
+        get => _weeklyUsage;
+        set
+        {
+            if (SetField(ref _weeklyUsage, value))
+            {
+                OnPropertyChanged(nameof(WeeklyUsageText));
+                OnPropertyChanged(nameof(WeeklyUsageToolTip));
+            }
+        }
+    }
+
     public string HeaderText => $"{Sender.ToUpperInvariant()} // {ProjectName.ToUpperInvariant()} // {ChatTitle.ToUpperInvariant()}";
     public string PreviewText => _structuredPresentation?.PreviewText ?? Text;
     public string DisplayText => _structuredPresentation?.DetailText ?? Text;
@@ -110,6 +124,8 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
     public string? UsageToolTip => IsLatestForThread
         ? CodexUsageFormatter.FormatThreadToolTip(Usage)
         : null;
+    public string WeeklyUsageText => CodexUsageFormatter.FormatWeeklySummary(WeeklyUsage);
+    public string WeeklyUsageToolTip => CodexUsageFormatter.FormatWeeklyToolTip(WeeklyUsage);
     public ReferencedFileResolution? ReferencedFileReference { get; init; }
     public string? ReferencedFilePath => ReferencedFileReference?.Path;
     public bool IsReferencedFileAvailable =>
@@ -120,7 +136,11 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
 
     public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
 
-    internal void RefreshUsagePresentation() => OnPropertyChanged(nameof(UsageToolTip));
+    internal void RefreshUsagePresentation()
+    {
+        OnPropertyChanged(nameof(UsageToolTip));
+        OnPropertyChanged(nameof(WeeklyUsageToolTip));
+    }
 
     private bool SetField<T>(ref T field, T value, [System.Runtime.CompilerServices.CallerMemberName] string? name = null)
     {

@@ -73,7 +73,7 @@ function Write-ReleaseSuccess
 
     Write-Host ""
     Write-Host ("=" * 72) -ForegroundColor Green
-    Write-Host "GREEN = SUCCESS" -ForegroundColor Green
+    Write-Host "SUCCESS" -ForegroundColor Green
     Write-Host ("=" * 72) -ForegroundColor Green
     Write-Host $Summary
     Write-Host "Total release time: $(Format-ReleaseDuration $script:releaseStopwatch.Elapsed)"

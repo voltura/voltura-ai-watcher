@@ -82,4 +82,29 @@ public sealed class CodexUsageSnapshotTests
         Assert.False(VolturaAiWatcher.CodexUsagePolicy.IsNewer(newer, older));
         Assert.True(VolturaAiWatcher.CodexUsagePolicy.IsNewer(older, newer));
     }
+
+    [Fact]
+    public void MessageEntryExposesWeeklyUsageForNotificationHeaders()
+    {
+        var snapshot = new VolturaAiWatcher.CodexUsageSnapshot(
+            null,
+            56000,
+            258400,
+            99,
+            System.DateTimeOffset.Parse("2026-08-08T12:00:00Z"),
+            System.DateTimeOffset.UtcNow);
+        var entry = new VolturaAiWatcher.CodexMessageEntry
+        {
+            Id = "id",
+            ThreadId = "thread",
+            ProjectName = "project",
+            Sender = "Codex",
+            Text = "message",
+            OccurredAt = System.DateTimeOffset.UtcNow,
+            WeeklyUsage = snapshot
+        };
+
+        Assert.Contains("WEEKLY 99% LEFT", entry.WeeklyUsageText);
+        Assert.Contains("Weekly usage remaining: 99%", entry.WeeklyUsageToolTip);
+    }
 }

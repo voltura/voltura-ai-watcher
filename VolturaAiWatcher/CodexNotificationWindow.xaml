@@ -154,11 +154,26 @@
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <TextBlock Text="{Binding HeaderText}"
-                               Foreground="#74D98A"
-                               FontSize="8.5"
-                               FontWeight="SemiBold"
-                               TextTrimming="CharacterEllipsis" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding HeaderText}"
+                                   Foreground="#74D98A"
+                                   FontSize="8.5"
+                                   FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding WeeklyUsageText}"
+                                   Foreground="#7CFF9A"
+                                   FontSize="7"
+                                   Margin="8,0,0,0"
+                                   MaxWidth="125"
+                                   TextAlignment="Right"
+                                   TextTrimming="CharacterEllipsis"
+                                   ToolTip="{Binding WeeklyUsageToolTip}" />
+                    </Grid>
                     <local:CompactMessagePreview Grid.Row="1"
                                                  MessageText="{Binding PreviewText}"
                                                  WorkingDirectory="{Binding WorkingDirectory}"

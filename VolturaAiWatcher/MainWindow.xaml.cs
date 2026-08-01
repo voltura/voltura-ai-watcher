@@ -256,6 +256,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
                 Usage = _usageByThread.TryGetValue(message.ThreadId, out var usage)
                     ? usage
                     : null,
+                WeeklyUsage = _latestWeeklyUsage,
                 ReferencedFileReference = ReferencedFileResolver.ResolveFirstExistingFileReference(
                     message.Text,
                     message.WorkingDirectory),
@@ -307,6 +308,11 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
                  observed.Usage.ObservedAt >= _latestWeeklyUsage.ObservedAt))
             {
                 _latestWeeklyUsage = observed.Usage;
+                foreach (var entry in _latestByThread.Values)
+                {
+                    entry.WeeklyUsage = _latestWeeklyUsage;
+                }
+
                 RefreshUsagePresentation();
             }
         }));

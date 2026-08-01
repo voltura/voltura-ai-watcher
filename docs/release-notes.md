@@ -1,3 +1,8 @@
+## v0.2.0
+
+- Shows Codex weekly usage, context-window usage, token counts, and the active model from local session telemetry, now also included in minimized notifications.
+
+
 ## v0.1.9
 
 - Matches the inactive screen-edge tab surface to the main message panel.
