@@ -38,18 +38,41 @@ public sealed class NotificationMessagePolicyTests
     [InlineData("You")]
     public void AllMessagesSettingShowsEverySender(string sender)
     {
-        Assert.True(NotificationMessagePolicy.ShouldShow(sender, onlyShowCodexResponses: false));
+        Assert.True(NotificationMessagePolicy.ShouldShow(
+            monitoringPaused: false,
+            sender,
+            onlyShowCodexResponses: false));
     }
 
     [Fact]
     public void CodexResponsesOnlySettingShowsCodexResponses()
     {
-        Assert.True(NotificationMessagePolicy.ShouldShow("Codex", onlyShowCodexResponses: true));
+        Assert.True(NotificationMessagePolicy.ShouldShow(
+            monitoringPaused: false,
+            "Codex",
+            onlyShowCodexResponses: true));
     }
 
     [Fact]
     public void CodexResponsesOnlySettingHidesUserPrompts()
     {
-        Assert.False(NotificationMessagePolicy.ShouldShow("You", onlyShowCodexResponses: true));
+        Assert.False(NotificationMessagePolicy.ShouldShow(
+            monitoringPaused: false,
+            "You",
+            onlyShowCodexResponses: true));
+    }
+
+    [Theory]
+    [InlineData("Codex", false)]
+    [InlineData("Codex", true)]
+    [InlineData("You", false)]
+    public void PausedMonitoringHidesMinimizedNotifications(
+        string sender,
+        bool onlyShowCodexResponses)
+    {
+        Assert.False(NotificationMessagePolicy.ShouldShow(
+            monitoringPaused: true,
+            sender,
+            onlyShowCodexResponses));
     }
 }

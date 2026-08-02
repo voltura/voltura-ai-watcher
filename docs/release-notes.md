@@ -1,3 +1,7 @@
+## v0.2.4
+
+- Adds a notification-area action to pause and continue monitoring without showing minimized update notifications while paused.
+
 ## v0.2.3
 
 - Shows each message's assigned Codex project name, color, and icon in the message list, minimized notification, and detail view.

@@ -40,6 +40,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
     private bool _initialized;
     private bool _initialPlacementApplied;
     private bool _updatingStartupMenu;
+    private bool _monitoringPaused;
     private bool _allowClose;
     private bool _disposed;
     private WindowTuckState _tuckState = WindowTuckState.Expanded;
@@ -1088,6 +1089,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
     {
         if (_settings.NotificationDurationSeconds == NotificationDurationPolicy.Off ||
             !NotificationMessagePolicy.ShouldShow(
+                _monitoringPaused,
                 entry.Sender,
                 _settings.OnlyShowCodexResponseNotifications))
         {
@@ -1109,6 +1111,18 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         show.Click += (_, _) => Dispatcher.Invoke(ShowFromTray);
         var openCodex = CreateMenuItem("Open Codex");
         openCodex.Click += async (_, _) => await CodexWindowActivator.OpenAsync(null);
+        var toggleMonitoring = CreateMenuItem("Pause monitoring");
+        toggleMonitoring.Click += (_, _) => Dispatcher.Invoke(() =>
+        {
+            _monitoringPaused = !_monitoringPaused;
+            toggleMonitoring.Text = _monitoringPaused
+                ? "Continue monitoring"
+                : "Pause monitoring";
+            if (_monitoringPaused)
+            {
+                _notificationWindow.Dismiss();
+            }
+        });
         var clear = CreateMenuItem("Clear resolved messages");
         clear.Click += (_, _) => Dispatcher.Invoke(ClearResolvedMessages);
 
@@ -1288,6 +1302,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
             [
                 show,
                 openCodex,
+                toggleMonitoring,
                 new System.Windows.Forms.ToolStripSeparator(),
                 clear,
                 settings,
