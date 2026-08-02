@@ -26,6 +26,7 @@ public sealed class CodexSessionMonitorTests
         Assert.Equal("Watcher project", message.ProjectName);
         Assert.Equal("green", message.ProjectMetadata.Color);
         Assert.Equal("wrench", message.ProjectMetadata.Icon);
+        Assert.True(message.ProjectMetadata.UsesOutlineIcon);
         System.IO.Directory.Delete(testRoot, recursive: true);
     }
 

@@ -210,7 +210,8 @@
                            Text="{Binding DetailHeading}"
                            Foreground="#7CFF9A"
                            FontWeight="Bold"
-                           FontSize="13" />
+                           FontSize="13"
+                           VerticalAlignment="Center" />
                 <TextBlock Grid.Column="2"
                            Text="{Binding StatusSummary}"
                            Foreground="{Binding StatusBrush}"
@@ -228,12 +229,20 @@
             </Grid>
 
             <StackPanel Grid.Row="1" Margin="0,14,0,10">
-                <StackPanel Orientation="Horizontal" ToolTip="{Binding ProjectToolTip}">
+                <StackPanel Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            ToolTip="{Binding ProjectToolTip}">
                     <Path Data="{Binding ProjectIconGeometry}"
-                          Fill="{Binding ProjectColorBrush}"
-                          Width="14"
-                          Height="14"
+                          Fill="{Binding ProjectIconFillBrush}"
+                          Stroke="{Binding ProjectIconStrokeBrush}"
+                          StrokeThickness="{Binding ProjectIconStrokeThickness}"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Width="16"
+                          Height="16"
                           Stretch="Uniform"
+                          VerticalAlignment="Center"
                           Margin="0,0,6,0">
                         <Path.Style>
                             <Style TargetType="Path">
@@ -250,6 +259,7 @@
                                Foreground="{Binding ProjectColorBrush}"
                                FontSize="10"
                                FontWeight="SemiBold"
+                               VerticalAlignment="Center"
                                TextWrapping="Wrap" />
                 </StackPanel>
                 <Border Margin="0,6,0,0"
@@ -368,30 +378,37 @@
                               Style="{StaticResource DetailFileIcon}" />
                     </Button>
                 </StackPanel>
-                <StackPanel Grid.Row="1"
-                            Margin="0,6,0,0"
-                            Orientation="Horizontal">
-                    <Button Style="{StaticResource DetailButton}"
-                            Content="COPY FORMATTED"
-                            ToolTip="Copy the readable message shown above"
-                            Click="CopyFormatted_Click" />
-                    <Button Style="{StaticResource DetailButton}"
-                            Content="COPY"
-                            ToolTip="Copy the original message"
-                            Click="Copy_Click" />
-                    <Button Style="{StaticResource DetailButton}"
-                            Content="REVIEW"
-                            IsEnabled="{Binding CanLaunchReview}"
-                            ToolTip="Launch an Review uncommitted changes action."
-                            Click="ReviewChanges_Click" />
-                    <Button Style="{StaticResource DetailButton}"
-                            Content="OPEN IN CODEX"
-                            Click="OpenCodex_Click" />
-                    <Button Style="{StaticResource DetailButton}"
+                <Grid Grid.Row="1" Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource DetailButton}"
+                                Margin="0"
+                                Content="COPY FORMATTED"
+                                ToolTip="Copy the readable message shown above"
+                                Click="CopyFormatted_Click" />
+                        <Button Style="{StaticResource DetailButton}"
+                                Content="COPY"
+                                ToolTip="Copy the original message"
+                                Click="Copy_Click" />
+                        <Button Style="{StaticResource DetailButton}"
+                                Content="REVIEW"
+                                IsEnabled="{Binding CanLaunchReview}"
+                                ToolTip="Launch an Review uncommitted changes action."
+                                Click="ReviewChanges_Click" />
+                        <Button Style="{StaticResource DetailButton}"
+                                Content="OPEN IN CODEX"
+                                Click="OpenCodex_Click" />
+                    </StackPanel>
+                    <Button Grid.Column="1"
+                            Style="{StaticResource DetailButton}"
+                            Margin="0"
                             Content="CLOSE"
                             ToolTip="Close message"
                             Click="Close_Click" />
-                </StackPanel>
+                </Grid>
             </Grid>
         </Grid>
     </Border>

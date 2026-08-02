@@ -128,10 +128,15 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
     public string HeaderText => $"{Sender.ToUpperInvariant()} // {ProjectName.ToUpperInvariant()} // {ChatTitle.ToUpperInvariant()}";
     public System.Windows.Media.Brush ProjectColorBrush =>
         (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString(ProjectMetadata.ColorHex)!;
-    public System.Windows.Media.Geometry? ProjectIconGeometry => string.IsNullOrWhiteSpace(ProjectMetadata.IconGeometry)
-        ? null
-        : System.Windows.Media.Geometry.Parse(ProjectMetadata.IconGeometry);
+    public System.Windows.Media.Geometry? ProjectIconGeometry =>
+        CodexProjectIconResolver.GetGeometry(ProjectMetadata.Icon) ??
+        (string.IsNullOrWhiteSpace(ProjectMetadata.IconGeometry)
+            ? null
+            : System.Windows.Media.Geometry.Parse(ProjectMetadata.IconGeometry));
     public bool HasProjectIcon => ProjectIconGeometry is not null;
+    public System.Windows.Media.Brush ProjectIconFillBrush => System.Windows.Media.Brushes.Transparent;
+    public System.Windows.Media.Brush ProjectIconStrokeBrush => ProjectColorBrush;
+    public double ProjectIconStrokeThickness => HasProjectIcon ? 1.0d : 0d;
     public string ProjectToolTip => $"Codex project: {ProjectName} ({ProjectMetadata.Color})";
 
     public void UpdateProjectMetadata(CodexProjectMetadata metadata)
@@ -143,6 +148,9 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
         OnPropertyChanged(nameof(ProjectColorBrush));
         OnPropertyChanged(nameof(ProjectIconGeometry));
         OnPropertyChanged(nameof(HasProjectIcon));
+        OnPropertyChanged(nameof(ProjectIconFillBrush));
+        OnPropertyChanged(nameof(ProjectIconStrokeBrush));
+        OnPropertyChanged(nameof(ProjectIconStrokeThickness));
         OnPropertyChanged(nameof(ProjectToolTip));
     }
     public string PreviewText => _structuredPresentation?.PreviewText ?? Text;

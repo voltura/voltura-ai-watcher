@@ -690,11 +690,16 @@
                                                 Orientation="Horizontal"
                                                 ToolTip="{Binding ProjectToolTip}">
                                         <Path Data="{Binding ProjectIconGeometry}"
-                                              Fill="{Binding ProjectColorBrush}"
-                                              Width="11"
-                                              Height="11"
+                                              Fill="{Binding ProjectIconFillBrush}"
+                                              Stroke="{Binding ProjectIconStrokeBrush}"
+                                              StrokeThickness="{Binding ProjectIconStrokeThickness}"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              StrokeLineJoin="Round"
+                                              Width="14"
+                                              Height="14"
                                               Stretch="Uniform"
-                                              Margin="0,-1,5,0">
+                                              Margin="0,-2,5,0">
                                             <Path.Style>
                                                 <Style TargetType="Path">
                                                     <Setter Property="Visibility" Value="Collapsed" />
