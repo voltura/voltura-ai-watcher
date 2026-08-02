@@ -3,6 +3,33 @@ namespace VolturaAiWatcher.Tests;
 public sealed class CodexSessionMonitorTests
 {
     [Fact]
+    public async System.Threading.Tasks.Task UsesCodexProjectNameColorAndIconForAssignedThread()
+    {
+        var testRoot = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "VolturaAiWatcherTests", System.Guid.NewGuid().ToString("N"));
+        var sessions = System.IO.Path.Combine(testRoot, "sessions", "2026", "08", "02");
+        System.IO.Directory.CreateDirectory(sessions);
+        var threadId = "019fc1da-76c6-7e13-b4ff-2d37e888b421";
+        await System.IO.File.WriteAllTextAsync(
+            System.IO.Path.Combine(sessions, $"rollout-2026-08-02T10-00-00-{threadId}.jsonl"),
+            "{\"timestamp\":\"2026-08-02T10:00:00.000Z\",\"type\":\"session_meta\",\"payload\":{\"session_id\":\"" + threadId + "\",\"cwd\":\"C:\\\\work\\\\watcher\"}}\n" +
+            "{\"timestamp\":\"2026-08-02T10:00:01.000Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"agent_message\",\"message\":\"Project metadata\"}}\n");
+        await System.IO.File.WriteAllTextAsync(
+            System.IO.Path.Combine(testRoot, ".codex-global-state.json"),
+            "{\"local-projects\":{\"project-1\":{\"name\":\"Watcher project\"}},\"project-appearances\":{\"project-1\":{\"color\":\"green\",\"marker\":{\"kind\":\"icon\",\"icon\":\"wrench\"}}},\"thread-project-assignments\":{\"" + threadId + "\":{\"projectKind\":\"local\",\"projectId\":\"project-1\"}}}");
+
+        var observed = new System.Collections.Concurrent.ConcurrentQueue<CodexObservedMessage>();
+        using var monitor = new CodexSessionMonitor(testRoot);
+        monitor.MessageObserved += (message, _) => observed.Enqueue(message);
+        await monitor.StartAsync();
+
+        var message = Assert.Single(observed);
+        Assert.Equal("Watcher project", message.ProjectName);
+        Assert.Equal("green", message.ProjectMetadata.Color);
+        Assert.Equal("wrench", message.ProjectMetadata.Icon);
+        System.IO.Directory.Delete(testRoot, recursive: true);
+    }
+
+    [Fact]
     public async System.Threading.Tasks.Task CapturesNewMessagesAndLifecycleWithoutReplayingStartupHistory()
     {
         var testRoot = System.IO.Path.Combine(

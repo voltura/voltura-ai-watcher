@@ -264,11 +264,30 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="{Binding HeaderText}"
-                                   Foreground="#74D98A"
-                                   FontSize="8.5"
-                                   FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis" />
+                        <StackPanel Orientation="Horizontal" ToolTip="{Binding ProjectToolTip}">
+                            <Path Data="{Binding ProjectIconGeometry}"
+                                  Fill="{Binding ProjectColorBrush}"
+                                  Width="11"
+                                  Height="11"
+                                  Stretch="Uniform"
+                                  Margin="0,-1,5,0">
+                                <Path.Style>
+                                    <Style TargetType="Path">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasProjectIcon}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Path.Style>
+                            </Path>
+                            <TextBlock Text="{Binding HeaderText}"
+                                       Foreground="{Binding ProjectColorBrush}"
+                                       FontSize="8.5"
+                                       FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
                         <TextBlock Grid.Column="1"
                                    Text="{Binding WeeklyUsageText}"
                                    Foreground="#7CFF9A"

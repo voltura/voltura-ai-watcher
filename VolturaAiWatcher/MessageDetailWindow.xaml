@@ -228,11 +228,30 @@
             </Grid>
 
             <StackPanel Grid.Row="1" Margin="0,14,0,10">
-                <TextBlock Text="{Binding HeaderText}"
-                           Foreground="#74D98A"
-                           FontSize="10"
-                           FontWeight="SemiBold"
-                           TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" ToolTip="{Binding ProjectToolTip}">
+                    <Path Data="{Binding ProjectIconGeometry}"
+                          Fill="{Binding ProjectColorBrush}"
+                          Width="14"
+                          Height="14"
+                          Stretch="Uniform"
+                          Margin="0,0,6,0">
+                        <Path.Style>
+                            <Style TargetType="Path">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasProjectIcon}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Path.Style>
+                    </Path>
+                    <TextBlock Text="{Binding HeaderText}"
+                               Foreground="{Binding ProjectColorBrush}"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap" />
+                </StackPanel>
                 <Border Margin="0,6,0,0"
                         Padding="7,3"
                         HorizontalAlignment="Left"

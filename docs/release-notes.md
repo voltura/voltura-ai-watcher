@@ -1,3 +1,7 @@
+## v0.2.3
+
+- Shows each message's assigned Codex project name, color, and icon in the message list, minimized notification, and detail view.
+
 ## v0.2.2
 
 - Shows Git status from the repository used by each Codex turn, even when a chat started in a different folder.

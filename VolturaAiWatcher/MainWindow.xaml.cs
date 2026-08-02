@@ -76,6 +76,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         _monitor.UsageObserved += Monitor_UsageObserved;
         _monitor.TitleObserved += Monitor_TitleObserved;
         _monitor.UnreadThreadsChanged += Monitor_UnreadThreadsChanged;
+        _monitor.ProjectMetadataChanged += Monitor_ProjectMetadataChanged;
         _monitor.MonitorWarning += Monitor_MonitorWarning;
         _notificationWindow = new CodexNotificationWindow(
             ShowMessageDetails,
@@ -254,6 +255,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
                 Id = message.Id,
                 ThreadId = message.ThreadId,
                 ProjectName = message.ProjectName,
+                ProjectMetadata = message.ProjectMetadata,
                 WorkingDirectory = message.WorkingDirectory,
                 ChatTitle = message.ChatTitle,
                 Sender = message.Sender,
@@ -291,6 +293,17 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
                 ShowNotification(entry);
             }
 
+        }));
+    }
+
+    private void Monitor_ProjectMetadataChanged()
+    {
+        Dispatcher.BeginInvoke(new System.Action(() =>
+        {
+            foreach (var entry in _messages)
+            {
+                entry.UpdateProjectMetadata(_monitor.GetProjectMetadata(entry.ThreadId, entry.WorkingDirectory));
+            }
         }));
     }
 

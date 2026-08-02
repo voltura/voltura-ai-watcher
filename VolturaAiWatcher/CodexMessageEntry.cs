@@ -13,10 +13,21 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
     private CodexUsageSnapshot? _weeklyUsage;
     private GitRepositorySnapshot? _gitRepository;
     private bool _isGitRefreshing;
+    private string _projectName = "Codex";
+    private CodexProjectMetadata _projectMetadata = CodexProjectMetadata.Fallback;
 
     public required string Id { get; init; }
     public required string ThreadId { get; init; }
-    public required string ProjectName { get; init; }
+    public required string ProjectName
+    {
+        get => _projectName;
+        init => _projectName = value;
+    }
+    public CodexProjectMetadata ProjectMetadata
+    {
+        get => _projectMetadata;
+        init => _projectMetadata = value;
+    }
     public string? WorkingDirectory { get; init; }
     public required string Sender { get; init; }
     public required string Text
@@ -115,6 +126,25 @@ public sealed class CodexMessageEntry : System.ComponentModel.INotifyPropertyCha
     }
 
     public string HeaderText => $"{Sender.ToUpperInvariant()} // {ProjectName.ToUpperInvariant()} // {ChatTitle.ToUpperInvariant()}";
+    public System.Windows.Media.Brush ProjectColorBrush =>
+        (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString(ProjectMetadata.ColorHex)!;
+    public System.Windows.Media.Geometry? ProjectIconGeometry => string.IsNullOrWhiteSpace(ProjectMetadata.IconGeometry)
+        ? null
+        : System.Windows.Media.Geometry.Parse(ProjectMetadata.IconGeometry);
+    public bool HasProjectIcon => ProjectIconGeometry is not null;
+    public string ProjectToolTip => $"Codex project: {ProjectName} ({ProjectMetadata.Color})";
+
+    public void UpdateProjectMetadata(CodexProjectMetadata metadata)
+    {
+        _projectMetadata = metadata;
+        _projectName = metadata.Name;
+        OnPropertyChanged(nameof(ProjectName));
+        OnPropertyChanged(nameof(HeaderText));
+        OnPropertyChanged(nameof(ProjectColorBrush));
+        OnPropertyChanged(nameof(ProjectIconGeometry));
+        OnPropertyChanged(nameof(HasProjectIcon));
+        OnPropertyChanged(nameof(ProjectToolTip));
+    }
     public string PreviewText => _structuredPresentation?.PreviewText ?? Text;
     public string DisplayText => _structuredPresentation?.DetailText ?? Text;
     public string DetailHeading => _structuredPresentation is null ? "COMPLETE CODEX MESSAGE" : "STRUCTURED CODEX MESSAGE";

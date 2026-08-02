@@ -4,6 +4,7 @@ public sealed record CodexObservedMessage(
     string Id,
     string ThreadId,
     string ProjectName,
+    CodexProjectMetadata ProjectMetadata,
     string? WorkingDirectory,
     string ChatTitle,
     string Sender,
@@ -24,6 +25,8 @@ public sealed class CodexSessionMonitor : System.IDisposable
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, FileCursor> _cursors =
         new(System.StringComparer.OrdinalIgnoreCase);
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _titles =
+        new(System.StringComparer.Ordinal);
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, CodexProjectMetadata> _projectMetadataByThread =
         new(System.StringComparer.Ordinal);
     private readonly System.Threading.Channels.Channel<MonitorWork> _work =
         System.Threading.Channels.Channel.CreateUnbounded<MonitorWork>(
@@ -62,6 +65,7 @@ public sealed class CodexSessionMonitor : System.IDisposable
     public event System.Action<string, string>? TitleObserved;
     public event System.Action<System.Collections.Generic.IReadOnlySet<string>>? UnreadThreadsChanged;
     public event System.Action<string>? MonitorWarning;
+    public event System.Action? ProjectMetadataChanged;
 
     public async System.Threading.Tasks.Task StartAsync()
     {
@@ -73,6 +77,7 @@ public sealed class CodexSessionMonitor : System.IDisposable
         _started = true;
         LoadTitles();
         LoadUnreadThreads();
+        LoadProjectMetadata();
 
         if (!System.IO.Directory.Exists(SessionsPath))
         {
@@ -187,6 +192,7 @@ public sealed class CodexSessionMonitor : System.IDisposable
                         case WorkKind.ReloadUnread:
                             await DelayForAtomicReplaceAsync();
                             LoadUnreadThreads();
+                            LoadProjectMetadata();
                             break;
                         case WorkKind.Reconcile:
                             ReconcileSessionFiles();
@@ -413,7 +419,7 @@ public sealed class CodexSessionMonitor : System.IDisposable
             return;
         }
 
-        var projectName = GetProjectName(cursor.WorkingDirectory);
+        var projectMetadata = GetProjectMetadata(threadId, cursor.WorkingDirectory);
         var effectiveStatus = parsed.Sender == "You"
             ? CodexChatStatus.Starting
             : cursor.Status is CodexChatStatus.Idle
@@ -422,7 +428,8 @@ public sealed class CodexSessionMonitor : System.IDisposable
         var message = new CodexObservedMessage(
             CodexRecordParser.CreateMessageId(threadId, parsed.OccurredAt, parsed.Sender, parsed.Message),
             threadId,
-            projectName,
+            projectMetadata.Name,
+            projectMetadata,
             cursor.WorkingDirectory,
             GetTitle(threadId),
             parsed.Sender,
@@ -566,6 +573,83 @@ public sealed class CodexSessionMonitor : System.IDisposable
 
         var candidate = name[^36..];
         return System.Guid.TryParse(candidate, out _) ? candidate : null;
+    }
+
+    public CodexProjectMetadata GetProjectMetadata(string threadId, string? workingDirectory)
+    {
+        return _projectMetadataByThread.TryGetValue(threadId, out var metadata)
+            ? metadata
+            : new CodexProjectMetadata(GetProjectName(workingDirectory), "green", null);
+    }
+
+    private void LoadProjectMetadata()
+    {
+        var metadata = new System.Collections.Generic.Dictionary<string, CodexProjectMetadata>(System.StringComparer.Ordinal);
+        if (!System.IO.File.Exists(GlobalStatePath))
+        {
+            return;
+        }
+
+        try
+        {
+            using var stream = new System.IO.FileStream(GlobalStatePath, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.ReadWrite | System.IO.FileShare.Delete);
+            using var document = System.Text.Json.JsonDocument.Parse(stream);
+            var root = document.RootElement;
+            if (!TryReadObject(root, "thread-project-assignments", out var assignments) || !TryReadObject(root, "local-projects", out var projects))
+            {
+                return;
+            }
+
+            var hasAppearances = TryReadObject(root, "project-appearances", out var appearances);
+            foreach (var assignment in assignments.EnumerateObject())
+            {
+                if (!TryReadString(assignment.Value, "projectId", out var projectId) ||
+                    !projects.TryGetProperty(projectId, out var project) ||
+                    !TryReadString(project, "name", out var name))
+                {
+                    continue;
+                }
+
+                var color = "green";
+                string? icon = null;
+                if (hasAppearances && appearances.TryGetProperty(projectId, out var appearance))
+                {
+                    _ = TryReadString(appearance, "color", out color);
+                    if (TryReadObject(appearance, "marker", out var marker))
+                    {
+                        _ = TryReadString(marker, "icon", out icon);
+                    }
+                }
+
+                metadata[assignment.Name] = new CodexProjectMetadata(name, color, icon);
+            }
+        }
+        catch (System.IO.IOException)
+        {
+            return;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return;
+        }
+
+        _projectMetadataByThread.Clear();
+        foreach (var item in metadata)
+        {
+            _projectMetadataByThread[item.Key] = item.Value;
+        }
+
+        ProjectMetadataChanged?.Invoke();
+    }
+
+    private static bool TryReadObject(System.Text.Json.JsonElement element, string name, out System.Text.Json.JsonElement value) =>
+        element.TryGetProperty(name, out value) && value.ValueKind == System.Text.Json.JsonValueKind.Object;
+
+    private static bool TryReadString(System.Text.Json.JsonElement element, string name, out string value)
+    {
+        value = string.Empty;
+        return element.TryGetProperty(name, out var property) && property.ValueKind == System.Text.Json.JsonValueKind.String &&
+               !string.IsNullOrWhiteSpace(value = property.GetString() ?? string.Empty);
     }
 
     private static string GetProjectName(string? workingDirectory)
