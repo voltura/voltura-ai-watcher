@@ -33,6 +33,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
     private AppSettings _settings;
     private System.Windows.Forms.NotifyIcon? _notifyIcon;
     private System.Drawing.Icon? _trayIcon;
+    private System.Drawing.Icon? _pausedTrayIcon;
     private System.Windows.Forms.ToolStripMenuItem? _startMinimizedMenuItem;
     private System.Windows.Forms.ToolStripMenuItem? _startWithWindowsMenuItem;
     private System.Windows.Forms.ToolStripMenuItem? _showClearedMenuItem;
@@ -136,6 +137,10 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         int width,
         int height,
         uint flags);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+    private static extern bool DestroyIcon(System.IntPtr iconHandle);
 
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     private struct NativeRect
@@ -1064,6 +1069,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         using (var sourceIcon = new System.Drawing.Icon(resource.Stream))
         {
             _trayIcon = (System.Drawing.Icon)sourceIcon.Clone();
+            _pausedTrayIcon = CreatePausedTrayIcon(_trayIcon);
         }
 
         var menu = CreateTrayMenu();
@@ -1118,6 +1124,7 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
             toggleMonitoring.Text = _monitoringPaused
                 ? "Continue monitoring"
                 : "Pause monitoring";
+            UpdateTrayIcon();
             if (_monitoringPaused)
             {
                 _notificationWindow.Dismiss();
@@ -1313,6 +1320,67 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
         return menu;
     }
 
+    private void UpdateTrayIcon()
+    {
+        if (_notifyIcon is null || _trayIcon is null)
+        {
+            return;
+        }
+
+        _notifyIcon.Icon = _monitoringPaused
+            ? _pausedTrayIcon ?? _trayIcon
+            : _trayIcon;
+        _notifyIcon.Text = _monitoringPaused
+            ? "Voltura AI Watcher (paused)"
+            : "Voltura AI Watcher";
+    }
+
+    private static System.Drawing.Icon CreatePausedTrayIcon(System.Drawing.Icon sourceIcon)
+    {
+        using var bitmap = sourceIcon.ToBitmap();
+        using var graphics = System.Drawing.Graphics.FromImage(bitmap);
+        graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+        var diameter = System.Math.Max(10, (int)(System.Math.Min(bitmap.Width, bitmap.Height) * 0.55));
+        var bounds = new System.Drawing.Rectangle(
+            bitmap.Width - diameter - 1,
+            bitmap.Height - diameter - 1,
+            diameter,
+            diameter);
+        using (var background = new System.Drawing.SolidBrush(
+                   System.Drawing.Color.FromArgb(235, 8, 15, 11)))
+        using (var border = new System.Drawing.Pen(
+                   System.Drawing.Color.FromArgb(255, 255, 193, 7),
+                   System.Math.Max(1f, diameter / 10f)))
+        {
+            graphics.FillEllipse(background, bounds);
+            graphics.DrawEllipse(border, bounds);
+        }
+
+        var barWidth = System.Math.Max(1, diameter / 6);
+        var barHeight = System.Math.Max(4, diameter / 2);
+        var barTop = bounds.Top + (diameter - barHeight) / 2;
+        var firstBarLeft = bounds.Left + diameter / 3 - barWidth;
+        var secondBarLeft = bounds.Left + (diameter * 2 / 3) - barWidth / 2;
+        using (var pauseBars = new System.Drawing.SolidBrush(
+                   System.Drawing.Color.FromArgb(255, 255, 193, 7)))
+        {
+            graphics.FillRectangle(pauseBars, firstBarLeft, barTop, barWidth, barHeight);
+            graphics.FillRectangle(pauseBars, secondBarLeft, barTop, barWidth, barHeight);
+        }
+
+        var handle = bitmap.GetHicon();
+        try
+        {
+            using var icon = System.Drawing.Icon.FromHandle(handle);
+            return (System.Drawing.Icon)icon.Clone();
+        }
+        finally
+        {
+            DestroyIcon(handle);
+        }
+    }
+
     private static string GetProductVersion()
     {
         var informationalVersion = System.Reflection.Assembly
@@ -1452,6 +1520,8 @@ public partial class MainWindow : System.Windows.Window, System.ComponentModel.I
 
         _trayIcon?.Dispose();
         _trayIcon = null;
+        _pausedTrayIcon?.Dispose();
+        _pausedTrayIcon = null;
         _trayComponents.Dispose();
     }
 }

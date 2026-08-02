@@ -1,3 +1,7 @@
+## v0.2.5
+
+- Shows a visible pause badge on the notification-area icon while monitoring is paused.
+
 ## v0.2.4
 
 - Adds a notification-area action to pause and continue monitoring without showing minimized update notifications while paused.
